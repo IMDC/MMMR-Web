@@ -47,8 +47,12 @@ cd server
 npm install
 ```
 
-### combined run ###
-npx tsx server/src/index.ts concurrently npm run dev --prefix "./client"
+### Combined run ###
+You can startup both the server and the client with a single command. Install node in mmmr-web folder. You will need to install the concurrently function on the first run (you will be prompted)
+```
+cd mmmr-web
+npm run dev
+```
 
 ### 3. Configure environment variables
 
@@ -70,6 +74,8 @@ npm install --legacy-peer-deps
 ---
 
 ## Running the App
+
+**
 
 Open two terminal windows:
 
