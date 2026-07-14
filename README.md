@@ -47,6 +47,9 @@ cd server
 npm install
 ```
 
+### combined run ###
+npx tsx server/src/index.ts concurrently npm run dev --prefix "./client"
+
 ### 3. Configure environment variables
 
 Create a `.env` file inside the `server/` directory:
