@@ -11,6 +11,12 @@ client/dist/
 server/.env
 client/.env
 
+# Videos
+# Ignore everything in the logs folder
+server/uploads/videos/*
+
+# But do NOT ignore the .gitkeep file
+server/uploads/videos/.gitkeep
 
 # Logs
 *.log
