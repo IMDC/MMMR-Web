@@ -41,42 +41,41 @@ cd MMMR-Web
 ```
 
 ### 2. Install server dependencies
-
 ```bash
 cd server
 npm install
-```
 
-### Combined run ###
-You can startup both the server and the client with a single command. Install node in mmmr-web folder. You will need to install the concurrently function on the first run (you will be prompted)
+## 6. Install Express
+```bash
+cd server
+npm i express
 ```
-cd mmmr-web
-npm run dev
 ```
 
 ### 3. Configure environment variables
-
 Create a `.env` file inside the `server/` directory:
-
 ```
 OPENAI_API_KEY=your_openai_api_key_here
 ```
-
 ### 4. Install client dependencies
 
-> `--legacy-peer-deps` is required due to a peer dependency conflict with React 18.
+> `--legacy-peer-deps` is required due to a peer dependency conflict with React 18. [this might not be necessary]
+
 
 ```bash
 cd ../client
 npm install --legacy-peer-deps
 ```
+** You may need to allow these legacy dependencies. Some have vulnerabilities. We should try to use supported packages where possible
 
 ---
+## 5. Install MongoDB
+https://www.mongodb.com/try/download/community
+** MongoDB is required for the database functionality; instructions for installing are different between OS **
+
 
 ## Running the App
-
 **
-
 Open two terminal windows:
 
 **Terminal 1 — Backend**
@@ -88,6 +87,13 @@ npx tsx src/index.ts
 **Terminal 2 — Frontend**
 ```bash
 cd client
+npm run dev
+```
+
+### Combined run ###
+You can startup both the server and the client with a single command. Install node in mmmr-web folder. You will need to install the concurrently function on the first run (you will be prompted)
+```
+cd mmmr-web
 npm run dev
 ```
 

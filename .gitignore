@@ -11,8 +11,6 @@ client/dist/
 server/.env
 client/.env
 
-# Uploads (user video files)
-server/uploads/
 
 # Logs
 *.log
