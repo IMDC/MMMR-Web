@@ -1,6 +1,6 @@
-# MyHealthMyRecord — Web App
+# MyMissionMyRecord — Web App
 
-A MERN-stack web companion to the MyHealthMyRecord (MHMR) Android health journaling app. Users record or upload video health journals, transcribe them, annotate them with emotions, pain scale, keywords, and location, and run AI-powered analysis across video sets — including word clouds, bar graphs, line graphs, and text reports.
+A MERN-stack web companion to the MyMissionMyRecord (MHMR) Android health journaling app. Users record or upload video health journals, transcribe them, annotate them with emotions, pain scale, keywords, and location, and run AI-powered analysis across video sets — including word clouds, bar graphs, line graphs, and text reports.
 
 ---
 
