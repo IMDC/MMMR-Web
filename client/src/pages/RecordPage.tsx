@@ -37,7 +37,13 @@ export default function RecordPage() {
   const startPreview = async () => {
     setError('');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: audioEnabled });
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: isPortrait
+          ? { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } }
+          : { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: audioEnabled,
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -149,15 +155,32 @@ export default function RecordPage() {
     <div className="flex flex-col h-full">
       <Header title="Record Video" subtitle="Record a health journal entry" />
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      {/* ── Responsive wrapper ──
+          Default (phone):        scrollable column, small portrait camera
+          md + portrait (iPad ↕): full-height column, camera fills space, controls pinned bottom
+          md + landscape (iPad ↔) and lg+ (laptop): scrollable, wide landscape camera
+      */}
+      <div className={state === 'recorded'
+        ? 'flex-1 flex flex-col overflow-hidden p-4 gap-4'
+        : 'flex-1 portrait:overflow-hidden portrait:p-0 portrait:space-y-0 portrait:flex portrait:flex-col landscape:overflow-y-auto landscape:p-5 landscape:space-y-5'
+      }>
+
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 portrait:m-4 portrait:mb-0">
             {error}
           </div>
         )}
 
         {/* Video preview / recording area */}
-        <div className="relative bg-black rounded-2xl overflow-hidden aspect-video">
+        <div className={state === 'recorded'
+          ? 'relative bg-black flex-1 min-h-0 w-full rounded-2xl overflow-hidden'
+          : [
+              'relative bg-black overflow-hidden mx-auto',
+              'portrait:flex-1 portrait:w-full portrait:max-w-none portrait:rounded-none portrait:aspect-auto',
+              'landscape:aspect-video landscape:rounded-2xl landscape:max-w-sm',
+              'sm:landscape:max-w-md md:landscape:max-w-lg lg:landscape:max-w-3xl xl:landscape:max-w-2xl',
+            ].join(' ')
+        }>
           <video
             ref={videoRef}
             className="w-full h-full object-cover"
@@ -185,14 +208,14 @@ export default function RecordPage() {
 
         {/* Upload progress */}
         {state === 'uploading' && (
-          <div className="card">
+          <div className="card portrait:mx-4">
             <ProgressBar progress={uploadProgress} message="Uploading video..." />
           </div>
         )}
 
         {/* Title input */}
         {(state === 'recorded' || state === 'uploading') && (
-          <div>
+          <div className={state === 'recorded' ? 'shrink-0' : 'portrait:px-4 portrait:pt-3'}>
             <label htmlFor="video-title" className="text-sm font-medium text-gray-700 mb-1 block">Video Title</label>
             <input
               id="video-title"
@@ -205,8 +228,11 @@ export default function RecordPage() {
           </div>
         )}
 
-        {/* Controls */}
-        <div className="flex gap-3">
+        {/* Controls — pinned to bottom on iPad portrait */}
+        <div className={state === 'recorded'
+          ? 'flex gap-3 shrink-0'
+          : 'flex gap-3 portrait:shrink-0 portrait:p-4 portrait:border-t portrait:border-gray-100 portrait:bg-white'
+        }>
           {state === 'idle' && (
             <button onClick={startPreview} className="btn-primary flex-1 flex items-center justify-center gap-2">
               <Camera size={18} />
@@ -216,12 +242,12 @@ export default function RecordPage() {
 
           {state === 'preview' && (
             <>
-              <button
+              {/* <button
                 onClick={() => setAudioEnabled(a => !a)}
                 className={`p-3 rounded-lg border-2 transition-colors ${audioEnabled ? 'border-mhmr-olive text-mhmr-olive' : 'border-gray-200 text-gray-400'}`}
               >
                 {audioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
-              </button>
+              </button> */}
               <button onClick={startRecording} className="btn-primary flex-1 flex items-center justify-center gap-2">
                 <Circle size={18} className="fill-current" />
                 Start Recording
@@ -256,7 +282,7 @@ export default function RecordPage() {
           )}
         </div>
 
-        {state === 'idle' && (
+        {/* {state === 'idle' && (
           <div className="text-center">
             <p className="text-sm text-gray-500">Or</p>
             <label className="btn-secondary mt-2 inline-flex items-center gap-2 cursor-pointer">
@@ -288,7 +314,7 @@ export default function RecordPage() {
               Upload existing video
             </label>
           </div>
-        )}
+        )} */}
       </div>
 
       {/* First-time auto-transcription prompt */}

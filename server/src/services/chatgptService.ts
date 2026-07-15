@@ -56,11 +56,8 @@ function getOptimalBulletPoints(wordCount: number): number {
 
 function normalizeBullets(text: string): string[] {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const bulletLines = lines.map(l => l.match(/^[-*•]\s*(.+)$/)?.[1]?.trim() || '').filter(Boolean);
-  if (bulletLines.length > 0) return bulletLines;
-
-  // Fallback: treat as sentences
-  return text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  // Strip any leading bullet/dash/number prefix GPT might add, regardless of Unicode variant
+  return lines.map(l => l.replace(/^[\u2022\u2023\u2043\u25E6\u2014\u2013\-\*\d]+[.):]?\s*/, '').trim()).filter(Boolean);
 }
 
 async function getSentimentForBullet(
@@ -143,8 +140,7 @@ ONLY use the • character (Unicode U+2022) to begin each bullet point.`;
     emotionStickers,
   );
 
-  // Format bullet output with • prefix
-  const tsOutputBullet = bulletPoints.map(p => `• ${p}`).join('\n');
+  const tsOutputBullet = bulletPoints.join('\n');
 
   return {
     tsOutputBullet,
@@ -217,7 +213,7 @@ export async function analyzeVideoSet(
   );
 
   return {
-    summaryAnalysisBullet: bulletPoints.map(p => `• ${p}`).join('\n'),
+    summaryAnalysisBullet: bulletPoints.join('\n'),
     summaryAnalysisSentence: sentence || '',
     weightedSentiment,
   };

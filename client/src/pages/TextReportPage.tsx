@@ -37,7 +37,7 @@ function getVideoSentiment(video: Video): string {
 
 function parseBullets(raw: string): string[] {
   return raw.split('\n')
-    .map(l => l.replace(/^[\u2022\-\*\d\.]+\s*/, '').trim())
+    .map(l => l.replace(/^[\u2022\u2023\u2043\u25E6\u2014\u2013\-\*\d]+[.):]?\s*/, '').trim())
     .filter(Boolean);
 }
 

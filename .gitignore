@@ -28,3 +28,6 @@ npm-debug.log*
 # IDE
 .vscode/
 .idea/
+
+# Project docs (local only)
+CLAUDE.md

@@ -28,6 +28,10 @@ Make sure the following are installed on your machine before getting started:
    - Windows: https://ffmpeg.org/download.html (add to PATH)
    - Linux: `sudo apt install ffmpeg`
 4. **An OpenAI API key** — https://platform.openai.com
+5. **concurrently** (global) — for the one-command startup script:
+   ```bash
+   npm install -g concurrently
+   ```
 
 ---
 
@@ -40,71 +44,39 @@ git clone https://github.com/IMDC/MMMR-Web.git
 cd MMMR-Web
 ```
 
-### 2. Install server dependencies
-```bash
-cd server
-npm install
-```
-
-## 3. Install Express
-```bash
-cd server
-npm i express
-```
-
-## 4. Configure environment variables
-Create a `.env` file inside the `server/` directory:
-API_KEY_SPEECH_TO_TEXT=xxxxxx
-API_OPENAI_CHATGPT=xxxxxx
-
-### 4. Install client dependencies
-
-> `--legacy-peer-deps` is required due to a peer dependency conflict with React 18. [this might not be necessary]
-
+### 2. Install dependencies
 
 ```bash
-cd ../client
-npm install --legacy-peer-deps
+cd server && npm install && cd ../client && npm install && cd ..
 ```
-You may need to allow these legacy dependencies. Some have vulnerabilities. We should try to use supported packages where possible.
+
+### 3. Configure environment variables
+
+Copy the example env file and fill in your OpenAI API key:
+
+```bash
+cp server/.env.example server/.env
+```
+
+Edit `server/.env` — both `API_OPENAI_CHATGPT` and `API_KEY_SPEECH_TO_TEXT`
+
+### 4. Create the uploads directory
+
+```bash
+mkdir -p server/uploads/videos
+```
 
 ---
-## 5. Install MongoDB
-https://www.mongodb.com/try/download/community
-MongoDB is required for the database functionality; instructions for installing are different between operating systems
-
 
 ## Running the App
-**Open two terminal windows:
 
-**Terminal 1 — Backend**
+From the root directory:
+
 ```bash
-cd server
-npx tsx src/index.ts
+npm run run-mmmr
 ```
 
-**Terminal 2 — Frontend**
-```bash
-cd client
-npm run dev
-```
-
-### Combined run from command line
-You can startup both the server and the client with a single command.
-For the first time, you will need to install the concurrently function on the first run.
-``
-npm install concurrently --save-dev
-``
-For Windows Powershell:
-```bash
-cd mmmr-web; npm run dev
-```
-For other terminals:
-```bash
-cd mmmr-web && npm run dev
-```
-
-Then open **http://localhost:3000** in your browser.
+This starts the backend and frontend together. Then open **http://localhost:3000** in your browser.
 
 > The backend runs on port **5001** (port 5000 is reserved by macOS AirPlay). The Vite dev server proxies `/api` requests automatically.
 
