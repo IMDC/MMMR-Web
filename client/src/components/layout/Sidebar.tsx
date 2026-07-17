@@ -1,6 +1,7 @@
-import { NavLink } from 'react-router-dom';
-import { Home, Video, Layers, BarChart2, Share2, HelpCircle, X } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Home, Video, Layers, BarChart2, Share2, HelpCircle, X, LogOut } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
+import { useAuthStore } from '../../store/authStore';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home', exact: true },
@@ -12,6 +13,15 @@ const navItems = [
 
 export default function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
+  const navigate = useNavigate();
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
+
+  const handleLogout = async () => {
+    toggleSidebar();
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <>
@@ -70,8 +80,8 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* Help */}
-        <div className="border-t border-gray-100 p-3">
+        {/* Help + account */}
+        <div className="border-t border-gray-100 p-3 space-y-1">
           <NavLink
             to="/help"
             onClick={toggleSidebar}
@@ -83,6 +93,24 @@ export default function Sidebar() {
             <HelpCircle size={19} />
             Help
           </NavLink>
+
+          {user && (
+            <>
+              <div className="px-3 pt-2 pb-1">
+                <p className="text-xs text-gray-400">Signed in as</p>
+                <p className="text-sm font-semibold text-gray-700 truncate">
+                  {user.displayName || user.username}
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut size={19} />
+                Log Out
+              </button>
+            </>
+          )}
         </div>
       </aside>
     </>

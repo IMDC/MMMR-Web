@@ -2,8 +2,8 @@ import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { SharedContent } from '../models/SharedContent';
 
-export async function listSharing(_req: Request, res: Response) {
-  const records = await SharedContent.find().sort({ dateCreated: -1 });
+export async function listSharing(req: Request, res: Response) {
+  const records = await SharedContent.find({ userId: req.userId }).sort({ dateCreated: -1 });
   res.json(records);
 }
 
@@ -19,6 +19,7 @@ export async function createSharing(req: Request, res: Response) {
   const dateExpires = new Date(Date.now() + (expireAfter || 30) * 24 * 60 * 60 * 1000);
 
   const record = await SharedContent.create({
+    userId: req.userId,
     permissionId,
     contentType,
     contentId,
@@ -44,7 +45,7 @@ export async function createSharing(req: Request, res: Response) {
 }
 
 export async function getSharing(req: Request, res: Response) {
-  const record = await SharedContent.findById(req.params.id);
+  const record = await SharedContent.findOne({ _id: req.params.id, userId: req.userId });
   if (!record) return res.status(404).json({ error: 'Sharing record not found' });
   res.json(record);
 }
@@ -59,14 +60,18 @@ export async function updateSharing(req: Request, res: Response) {
     updates.dateExpires = new Date(Date.now() + req.body.expireAfter * 24 * 60 * 60 * 1000);
   }
 
-  const record = await SharedContent.findByIdAndUpdate(req.params.id, updates, { new: true });
+  const record = await SharedContent.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
+    updates,
+    { new: true },
+  );
   if (!record) return res.status(404).json({ error: 'Sharing record not found' });
   res.json(record);
 }
 
 export async function deactivateSharing(req: Request, res: Response) {
-  const record = await SharedContent.findByIdAndUpdate(
-    req.params.id,
+  const record = await SharedContent.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
     { isActive: false, isDeactivating: false },
     { new: true },
   );
@@ -75,8 +80,8 @@ export async function deactivateSharing(req: Request, res: Response) {
 }
 
 export async function reactivateSharing(req: Request, res: Response) {
-  const record = await SharedContent.findByIdAndUpdate(
-    req.params.id,
+  const record = await SharedContent.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
     { isActive: true },
     { new: true },
   );

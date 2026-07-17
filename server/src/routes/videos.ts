@@ -16,7 +16,7 @@ const router = Router();
 
 router.get('/', asyncWrapper(listVideos));
 router.post('/upload', upload.single('video'), asyncWrapper(uploadVideo));
-router.get('/stream/:filename', streamVideoFile);   // must be before /:id
+router.get('/stream/:filename', asyncWrapper(streamVideoFile));   // must be before /:id
 router.get('/:id', asyncWrapper(getVideo));
 router.patch('/:id', asyncWrapper(updateVideo));
 router.delete('/:id', asyncWrapper(deleteVideo));

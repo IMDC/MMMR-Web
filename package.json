@@ -2,7 +2,7 @@
   "name": "mmmr-web",
   "version": "1.0.0",
   "scripts": {
-    "run-mmmr": "concurrently \"npx tsx server/src/index.ts\" \"cd client && npm run dev\""
+    "mmmr": "concurrently \"npx tsx server/src/index.ts\" \"cd client && npm run dev\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

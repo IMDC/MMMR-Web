@@ -1,6 +1,7 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IVideoData extends Omit<Document, 'isSelected'> {
+  userId: Types.ObjectId;
   title: string;
   filename: string;
   datetimeRecorded: Date;
@@ -29,6 +30,7 @@ export interface IVideoData extends Omit<Document, 'isSelected'> {
 
 const VideoDataSchema = new Schema<IVideoData>(
   {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     title: { type: String, required: true, default: () => new Date().toLocaleString() },
     filename: { type: String, required: true, unique: true },
     datetimeRecorded: { type: Date, default: Date.now },

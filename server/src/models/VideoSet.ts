@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IVideoSet extends Document {
+  userId: Types.ObjectId;
   name: string;
   datetime: Date;
   videoIDs: Types.ObjectId[];
@@ -23,6 +24,7 @@ export interface IVideoSet extends Document {
 
 const VideoSetSchema = new Schema<IVideoSet>(
   {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     name: { type: String, required: true },
     datetime: { type: Date, default: Date.now },
     videoIDs: [{ type: Schema.Types.ObjectId, ref: 'VideoData' }],

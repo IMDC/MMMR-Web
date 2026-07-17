@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncWrapper } from '../middleware/asyncWrapper';
+import { requireAuth } from '../middleware/requireAuth';
 import {
   listSharing,
   createSharing,
@@ -12,12 +13,15 @@ import {
 
 const router = Router();
 
-router.get('/', asyncWrapper(listSharing));
-router.post('/', asyncWrapper(createSharing));
+// Public: recipients open a share by its access code (no login).
 router.get('/access/:code', asyncWrapper(getSharingByCode));
-router.get('/:id', asyncWrapper(getSharing));
-router.patch('/:id', asyncWrapper(updateSharing));
-router.post('/:id/deactivate', asyncWrapper(deactivateSharing));
-router.post('/:id/reactivate', asyncWrapper(reactivateSharing));
+
+// Everything else is owner-scoped and requires a logged-in session.
+router.get('/', requireAuth, asyncWrapper(listSharing));
+router.post('/', requireAuth, asyncWrapper(createSharing));
+router.get('/:id', requireAuth, asyncWrapper(getSharing));
+router.patch('/:id', requireAuth, asyncWrapper(updateSharing));
+router.post('/:id/deactivate', requireAuth, asyncWrapper(deactivateSharing));
+router.post('/:id/reactivate', requireAuth, asyncWrapper(reactivateSharing));
 
 export default router;

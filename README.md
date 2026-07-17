@@ -58,7 +58,9 @@ Copy the example env file and fill in your OpenAI API key:
 cp server/.env.example server/.env
 ```
 
-Edit `server/.env` — both `API_OPENAI_CHATGPT` and `API_KEY_SPEECH_TO_TEXT`
+Edit `server/.env` and fill in:
+- `API_OPENAI_CHATGPT` and `API_KEY_SPEECH_TO_TEXT` — your API keys
+- `SESSION_SECRET` — any long random string (used to sign login session cookies)
 
 ### 4. Create the uploads directory
 
@@ -73,7 +75,7 @@ mkdir -p server/uploads/videos
 From the root directory:
 
 ```bash
-npm run run-mmmr
+npm run mmmr
 ```
 
 This starts the backend and frontend together. Then open **http://localhost:3000** in your browser.
@@ -82,8 +84,38 @@ This starts the backend and frontend together. Then open **http://localhost:3000
 
 ---
 
+## User Login & Per-Participant Data Isolation
+
+> **Status: proof of concept.** The app now requires a login. Each participant only sees and can access **their own** videos, video sets, annotations, contacts, and shares. There is no public sign-up — accounts are created manually via a seed script. This models a real study deployment where every participant gets a private account.
+
+### How it works (high level)
+
+- **Auth:** username + password login backed by a server-side **session cookie** (httpOnly, stored in MongoDB via `connect-mongo`). Passwords are hashed with `bcryptjs`. The React app checks the session on load, protects all routes behind a login screen, and shows the current user + a **Log Out** button in the sidebar.
+- **Data isolation:** every owned record (`VideoData`, `VideoSet`, `Contact`, `SharedContent`) carries a `userId`, and every API query is scoped to the logged-in user. A participant requesting another user's video, video set, or **stream URL** gets a `404` — the data is invisible, not just hidden in the UI.
+- **File storage:** each participant's uploaded videos live in their own folder on disk — `server/uploads/videos/<userId>/…` — so files are physically separated per user, not just in the database.
+
+### Seeding the participant accounts
+
+Accounts are created (or updated) by an editable script. This must be done once before anyone can log in.
+
+1. Open `server/src/scripts/seedUsers.ts` and edit the `USERS` array — set a username, password, and display name for each participant.
+2. Run the seed script from the repo root:
+   ```bash
+   npx tsx server/src/scripts/seedUsers.ts
+   ```
+   Re-running is safe: existing users (matched by username) are updated in place, so this is also how you change a password.
+
+### Starting fresh (optional)
+
+To wipe **all** participant data (videos, video sets, contacts, shares, and the uploads folder) for a clean test — this does **not** delete user accounts:
+
+```bash
+npx tsx server/src/scripts/resetData.ts
+```
+
 ## Features
 
+- Per-participant login with private, isolated data and per-user file storage (see above)
 - Record video via webcam or upload an existing file
 - Annotate videos with emotion stickers, pain scale, keywords, location, and text comments
 - Transcribe videos using OpenAI Whisper with real-time progress
