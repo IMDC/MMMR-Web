@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import RecordPage from './pages/RecordPage';
 import ManageVideosPage from './pages/ManageVideosPage';
@@ -15,11 +17,15 @@ import SharingPage from './pages/SharingPage';
 import HelpPage from './pages/HelpPage';
 
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
   {
-    path: '/',
-    element: <Layout />,
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <HomePage /> },
+      {
+        path: '/',
+        element: <Layout />,
+        children: [
+          { index: true, element: <HomePage /> },
       { path: 'record', element: <RecordPage /> },
       { path: 'videos', element: <ManageVideosPage /> },
       { path: 'videos/:id', element: <VideoDetailPage /> },
@@ -30,9 +36,11 @@ export const router = createBrowserRouter([
       { path: 'analysis/:setId/line', element: <LineGraphPage /> },
       { path: 'analysis/:setId/cloud', element: <WordCloudPage /> },
       { path: 'analysis/:setId/report', element: <TextReportPage /> },
-      { path: 'sharing', element: <SharingPage /> },
-      { path: 'help', element: <HelpPage /> },
-      { path: '*', element: <Navigate to="/" replace /> },
+          { path: 'sharing', element: <SharingPage /> },
+          { path: 'help', element: <HelpPage /> },
+          { path: '*', element: <Navigate to="/" replace /> },
+        ],
+      },
     ],
   },
 ]);

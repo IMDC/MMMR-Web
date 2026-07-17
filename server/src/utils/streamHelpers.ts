@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { Request, Response } from 'express';
-import { config } from '../config/env';
+import { userUploadDir } from './userPaths';
 
-export function streamVideo(req: Request, res: Response, filename: string) {
-  const filePath = path.join(config.uploadsDir, filename);
+export function streamVideo(req: Request, res: Response, userId: string, filename: string) {
+  const filePath = path.join(userUploadDir(userId), filename);
 
   if (!fs.existsSync(filePath)) {
     res.status(404).json({ error: 'Video file not found' });

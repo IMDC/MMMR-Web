@@ -2,10 +2,13 @@ import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from './env';
+import { ensureUserUploadDir } from '../utils/userPaths';
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, config.uploadsDir);
+  destination: (req, _file, cb) => {
+    // requireAuth runs before the upload handler, so req.userId is set.
+    if (!req.userId) return cb(new Error('Not authenticated'), '');
+    cb(null, ensureUserUploadDir(req.userId));
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);

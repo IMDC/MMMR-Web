@@ -3,8 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { VideoData } from '../models/VideoData';
 import { VideoSet } from '../models/VideoSet';
-import { config } from '../config/env';
 import { streamVideo } from '../utils/streamHelpers';
+import { userUploadDir } from '../utils/userPaths';
 import { transcribeVideo, TranscriptionStage } from '../services/transcriptionService';
 import { getVideoDuration } from '../services/ffmpegService';
 
@@ -13,7 +13,7 @@ export async function listVideos(req: Request, res: Response) {
   const offset = parseInt(req.query.offset as string || '0', 10);
   const search = req.query.search as string | undefined;
 
-  const query: any = {};
+  const query: any = { userId: req.userId };
   if (search) {
     query.$or = [
       { title: { $regex: search, $options: 'i' } },
@@ -30,7 +30,7 @@ export async function listVideos(req: Request, res: Response) {
 }
 
 export async function getVideo(req: Request, res: Response) {
-  const video = await VideoData.findById(req.params.id);
+  const video = await VideoData.findOne({ _id: req.params.id, userId: req.userId });
   if (!video) return res.status(404).json({ error: 'Video not found' });
   res.json(video);
 }
@@ -39,15 +39,17 @@ export async function uploadVideo(req: Request, res: Response) {
   if (!req.file) return res.status(400).json({ error: 'No video file provided' });
 
   const filename = req.file.filename;
+  const userId = req.userId!;
   let duration = 0;
 
   try {
-    duration = await getVideoDuration(filename);
+    duration = await getVideoDuration(userId, filename);
   } catch {
     // non-fatal; duration stays 0
   }
 
   const video = await VideoData.create({
+    userId,
     title: req.body.title || new Date().toLocaleString(),
     filename,
     duration,
@@ -68,46 +70,53 @@ export async function updateVideo(req: Request, res: Response) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
   }
 
-  const video = await VideoData.findByIdAndUpdate(req.params.id, updates, { new: true });
+  const video = await VideoData.findOneAndUpdate(
+    { _id: req.params.id, userId: req.userId },
+    updates,
+    { new: true },
+  );
   if (!video) return res.status(404).json({ error: 'Video not found' });
   res.json(video);
 }
 
 export async function deleteVideo(req: Request, res: Response) {
-  const video = await VideoData.findById(req.params.id);
+  const video = await VideoData.findOne({ _id: req.params.id, userId: req.userId });
   if (!video) return res.status(404).json({ error: 'Video not found' });
 
-  // Delete file from disk
-  const filePath = path.join(config.uploadsDir, video.filename);
+  // Delete file from the owner's folder
+  const filePath = path.join(userUploadDir(req.userId!), video.filename);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
 
-  // Remove from all video sets
+  // Remove from this user's video sets
   await VideoSet.updateMany(
-    { videoIDs: video._id },
+    { userId: req.userId, videoIDs: video._id },
     { $pull: { videoIDs: video._id } },
   );
 
-  // Delete empty video sets
-  await VideoSet.deleteMany({ videoIDs: { $size: 0 } });
+  // Delete this user's now-empty video sets
+  await VideoSet.deleteMany({ userId: req.userId, videoIDs: { $size: 0 } });
 
   await video.deleteOne();
   res.json({ message: 'Video deleted' });
 }
 
-export function streamVideoFile(req: Request, res: Response) {
-  // filename is passed as a query param to avoid path injection
+export async function streamVideoFile(req: Request, res: Response) {
   const { filename } = req.params;
   // Basic path traversal protection
   if (filename.includes('..') || filename.includes('/')) {
     return res.status(400).json({ error: 'Invalid filename' });
   }
-  streamVideo(req, res, filename as string);
+  // Ownership check: only stream a file that belongs to the logged-in user.
+  const video = await VideoData.findOne({ filename, userId: req.userId });
+  if (!video) return res.status(404).json({ error: 'Video not found' });
+
+  streamVideo(req, res, req.userId!, filename as string);
 }
 
 export async function transcribeVideoById(req: Request, res: Response) {
-  const video = await VideoData.findById(req.params.id);
+  const video = await VideoData.findOne({ _id: req.params.id, userId: req.userId });
   if (!video) return res.status(404).json({ error: 'Video not found' });
 
   if (video.isTranscribed) {
@@ -120,7 +129,7 @@ export async function transcribeVideoById(req: Request, res: Response) {
   }
 
   try {
-    const result = await transcribeVideo(video.filename);
+    const result = await transcribeVideo(req.userId!, video.filename);
 
     await VideoData.findByIdAndUpdate(video._id, {
       transcript: result.transcript,
@@ -143,7 +152,7 @@ export async function transcribeVideoById(req: Request, res: Response) {
 
 // Server-Sent Events endpoint for real-time transcription progress
 export async function transcriptionStatus(req: Request, res: Response) {
-  const video = await VideoData.findById(req.params.id);
+  const video = await VideoData.findOne({ _id: req.params.id, userId: req.userId });
   if (!video) return res.status(404).json({ error: 'Video not found' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -156,7 +165,7 @@ export async function transcriptionStatus(req: Request, res: Response) {
   };
 
   try {
-    const result = await transcribeVideo(video.filename, send);
+    const result = await transcribeVideo(req.userId!, video.filename, send);
 
     await VideoData.findByIdAndUpdate(video._id, {
       transcript: result.transcript,

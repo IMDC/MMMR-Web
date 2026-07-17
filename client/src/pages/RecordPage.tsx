@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Mic, MicOff, Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff } from 'lucide-react';
+import { Camera, Mic, MicOff, Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { videosApi } from '../api/videos';
 import Header from '../components/layout/Header';
@@ -27,7 +27,16 @@ export default function RecordPage() {
   const [savedVideoId, setSavedVideoId] = useState<string | null>(null);
   const [showTranscribePrompt, setShowTranscribePrompt] = useState(false);
   const [autoTranscribeStarted, setAutoTranscribeStarted] = useState(false);
+  const [transcribeStatus, setTranscribeStatus] = useState<'running' | 'done' | 'error'>('running');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const runTranscription = (id: string) => {
+    setAutoTranscribeStarted(true);
+    setTranscribeStatus('running');
+    videosApi.transcribe(id)
+      .then(() => setTranscribeStatus('done'))
+      .catch(() => setTranscribeStatus('error'));
+  };
 
   useEffect(() => () => {
     streamRef.current?.getTracks().forEach(t => t.stop());
@@ -116,9 +125,8 @@ export default function RecordPage() {
         // First time — show preference prompt before post-save modal
         setShowTranscribePrompt(true);
       } else if (pref === 'true') {
-        // Auto-transcribe: fire and forget
-        videosApi.transcribe(video._id).catch(() => {});
-        setAutoTranscribeStarted(true);
+        // Auto-transcribe
+        runTranscription(video._id);
       }
 
       setState('saved');
@@ -132,8 +140,7 @@ export default function RecordPage() {
     localStorage.setItem('mhmr_autotranscribe', String(enabled));
     setShowTranscribePrompt(false);
     if (enabled && savedVideoId) {
-      videosApi.transcribe(savedVideoId).catch(() => {});
-      setAutoTranscribeStarted(true);
+      runTranscription(savedVideoId);
     }
   };
 
@@ -143,6 +150,7 @@ export default function RecordPage() {
     setSavedVideoId(null);
     setElapsed(0);
     setAutoTranscribeStarted(false);
+    setTranscribeStatus('running');
     setShowTranscribePrompt(false);
     if (videoRef.current) videoRef.current.src = '';
     setState('idle');
@@ -388,10 +396,22 @@ export default function RecordPage() {
             <div className="text-center">
               <h2 id="postsave-title" className="text-xl font-bold text-gray-900">Video Saved!</h2>
               {autoTranscribeStarted ? (
-                <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                  <Loader2 size={13} className="text-blue-500 animate-spin" />
-                  <p className="text-sm text-blue-500 font-medium">Transcription started in background</p>
-                </div>
+                transcribeStatus === 'running' ? (
+                  <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                    <Loader2 size={13} className="text-blue-500 animate-spin" />
+                    <p className="text-sm text-blue-500 font-medium">Transcribing… this can take a minute</p>
+                  </div>
+                ) : transcribeStatus === 'done' ? (
+                  <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                    <CheckCircle size={13} className="text-mhmr-olive" />
+                    <p className="text-sm text-mhmr-olive font-medium">Transcription complete</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                    <AlertCircle size={13} className="text-red-500" />
+                    <p className="text-sm text-red-500 font-medium">Transcription failed — you can retry from the video page</p>
+                  </div>
+                )
               ) : (
                 <p className="text-sm text-gray-500 mt-1">What would you like to do next?</p>
               )}

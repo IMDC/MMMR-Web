@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 const RecipientSchema = new Schema({
   id: { type: String, required: true },
@@ -30,6 +30,7 @@ const SharingActivitySchema = new Schema({
 }, { _id: false });
 
 export interface ISharedContent extends Document {
+  userId: Types.ObjectId;
   permissionId: string;
   contentType: string;
   contentId: string;
@@ -52,6 +53,7 @@ export interface ISharedContent extends Document {
 
 const SharedContentSchema = new Schema<ISharedContent>(
   {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     permissionId: { type: String, required: true, unique: true },
     contentType: { type: String, required: true, enum: ['video', 'videoSet', 'analytics', 'report'] },
     contentId: { type: String, required: true },
