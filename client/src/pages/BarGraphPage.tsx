@@ -33,13 +33,12 @@ export default function BarGraphPage() {
 
   const [data, setData] = useState<{ text: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [minCount, setMinCount] = useState(2);
+  const [minCount, setMinCount] = useState(1);
   const [minCountInput, setMinCountInput] = useState('2');
   // hiddenWords: words removed from the chart (checked in modal = hidden)
   const [hiddenWords, setHiddenWords] = useState<Set<string>>(new Set());
   const [showWordSettings, setShowWordSettings] = useState(false);
   const [wordSearch, setWordSearch] = useState('');
-
   const videoSet = videoSets.find(s => s._id === setId);
 
   useEffect(() => {
