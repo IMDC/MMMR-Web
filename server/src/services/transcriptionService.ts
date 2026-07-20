@@ -3,6 +3,7 @@ import path from 'path';
 import FormData from 'form-data';
 import axios from 'axios';
 import { config } from '../config/env';
+import { userUploadDir } from '../utils/userPaths';
 import { extractAudio, cleanupAudio } from './ffmpegService';
 import { detectCrisisContent, CrisisDetectionResult } from './crisisService';
 import { processTranscriptToFrequency, FrequencyMap } from './frequencyService';
@@ -28,6 +29,7 @@ export interface TranscriptionResult {
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB Whisper limit
 
 export async function transcribeVideo(
+  userId: string,
   videoFilename: string,
   onProgress?: ProgressCallback,
 ): Promise<TranscriptionResult> {
@@ -40,10 +42,10 @@ export async function transcribeVideo(
   try {
     // Step 1: Extract audio
     emit('audio_extraction_start', 5, 'Extracting audio from video...');
-    mp3Filename = await extractAudio(videoFilename);
+    mp3Filename = await extractAudio(userId, videoFilename);
     emit('audio_extraction_done', 30, 'Audio extracted successfully');
 
-    const mp3Path = path.join(config.uploadsDir, mp3Filename);
+    const mp3Path = path.join(userUploadDir(userId), mp3Filename);
     const fileSize = fs.statSync(mp3Path).size;
 
     if (fileSize > MAX_FILE_SIZE_BYTES) {
@@ -95,7 +97,7 @@ export async function transcribeVideo(
   } finally {
     // Always clean up audio file
     if (mp3Filename) {
-      await cleanupAudio(mp3Filename).catch(() => {});
+      await cleanupAudio(userId, mp3Filename).catch(() => {});
     }
   }
 }

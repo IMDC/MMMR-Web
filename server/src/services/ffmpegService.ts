@@ -2,14 +2,16 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import path from 'path';
 import fs from 'fs';
-import { config } from '../config/env';
+import { userUploadDir } from '../utils/userPaths';
 
 ffmpeg.setFfmpegPath(ffmpegPath.path);
 
-export async function extractAudio(videoFilename: string): Promise<string> {
-  const videoPath = path.join(config.uploadsDir, videoFilename);
+// All file operations are scoped to the owning participant's upload folder.
+export async function extractAudio(userId: string, videoFilename: string): Promise<string> {
+  const dir = userUploadDir(userId);
+  const videoPath = path.join(dir, videoFilename);
   const mp3Filename = videoFilename.replace(/\.[^/.]+$/, '.mp3');
-  const mp3Path = path.join(config.uploadsDir, mp3Filename);
+  const mp3Path = path.join(dir, mp3Filename);
 
   if (!fs.existsSync(videoPath)) {
     throw new Error(`Video file not found: ${videoPath}`);
@@ -28,15 +30,15 @@ export async function extractAudio(videoFilename: string): Promise<string> {
   });
 }
 
-export async function cleanupAudio(mp3Filename: string): Promise<void> {
-  const mp3Path = path.join(config.uploadsDir, mp3Filename);
+export async function cleanupAudio(userId: string, mp3Filename: string): Promise<void> {
+  const mp3Path = path.join(userUploadDir(userId), mp3Filename);
   if (fs.existsSync(mp3Path)) {
     fs.unlinkSync(mp3Path);
   }
 }
 
-export function getVideoDuration(videoFilename: string): Promise<number> {
-  const videoPath = path.join(config.uploadsDir, videoFilename);
+export function getVideoDuration(userId: string, videoFilename: string): Promise<number> {
+  const videoPath = path.join(userUploadDir(userId), videoFilename);
 
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(videoPath, (err, metadata) => {

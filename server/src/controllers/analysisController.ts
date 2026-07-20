@@ -16,7 +16,7 @@ export async function analyzeVideo(req: Request, res: Response) {
   const { videoId, skipTextReports } = req.body;
   if (!videoId) return res.status(400).json({ error: 'videoId is required' });
 
-  const video = await VideoData.findById(videoId);
+  const video = await VideoData.findOne({ _id: videoId, userId: req.userId });
   if (!video) return res.status(404).json({ error: 'Video not found' });
 
   if (!video.transcript || !video.transcript.trim()) {
@@ -80,7 +80,7 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
   const { videoSetId } = req.body;
   if (!videoSetId) return res.status(400).json({ error: 'videoSetId is required' });
 
-  const set = await VideoSet.findById(videoSetId);
+  const set = await VideoSet.findOne({ _id: videoSetId, userId: req.userId });
   if (!set) return res.status(404).json({ error: 'Video set not found' });
 
   const videos = await VideoData.find({ _id: { $in: set.videoIDs } });
@@ -138,7 +138,7 @@ export async function getFrequencyData(req: Request, res: Response) {
   const { videoSetId } = req.params;
   const minCount = parseInt(req.query.minCount as string || '2', 10);
 
-  const set = await VideoSet.findById(videoSetId);
+  const set = await VideoSet.findOne({ _id: videoSetId, userId: req.userId });
   if (!set) return res.status(404).json({ error: 'Video set not found' });
 
   const videos = await VideoData.find({
@@ -179,7 +179,7 @@ export async function getLineGraphData(req: Request, res: Response) {
   const word = req.query.word as string;
   if (!word) return res.status(400).json({ error: 'word query param is required' });
 
-  const set = await VideoSet.findById(videoSetId);
+  const set = await VideoSet.findOne({ _id: videoSetId, userId: req.userId });
   if (!set) return res.status(404).json({ error: 'Video set not found' });
 
   const videos = await VideoData.find({
@@ -210,7 +210,7 @@ export async function reprocessFrequency(req: Request, res: Response) {
   const { videoId } = req.body;
   if (!videoId) return res.status(400).json({ error: 'videoId is required' });
 
-  const video = await VideoData.findById(videoId);
+  const video = await VideoData.findOne({ _id: videoId, userId: req.userId });
   if (!video) return res.status(404).json({ error: 'Video not found' });
 
   const freqMap = processTranscriptToFrequency(video.transcript, 1);
