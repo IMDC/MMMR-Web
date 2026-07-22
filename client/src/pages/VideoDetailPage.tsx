@@ -110,7 +110,7 @@ export default function VideoDetailPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col md:h-full">
       {/* Header */}
       <div className="bg-mhmr-olive px-4 py-3 flex items-center gap-3 shadow-sm shrink-0">
         <button onClick={() => navigate('/videos')} className="text-white/80 hover:text-white" aria-label="Back to Manage Videos">
@@ -123,21 +123,25 @@ export default function VideoDetailPage() {
         {video.sentiment && <SentimentBadge sentiment={video.sentiment} />}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4">
-          {/* Video player */}
+      {/* Body — stacked on mobile, side-by-side on md+ */}
+      <div className="flex-1 md:overflow-hidden md:flex md:flex-row">
+
+        {/* Left: video player */}
+        <div className="p-4 md:w-[55%] md:shrink-0 md:flex md:flex-col md:justify-start md:overflow-hidden">
           <VideoPlayer filename={video.filename} />
 
-          {/* Crisis warning */}
           {video.flagged_for_harm && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
               <AlertTriangle className="text-red-500 shrink-0" size={18} />
               <p className="text-red-700 text-sm font-medium">
                 This recording has been flagged for potentially concerning content.
               </p>
             </div>
           )}
+        </div>
 
+        {/* Right: transcript + annotations */}
+        <div className="p-4 space-y-4 md:flex-1 md:overflow-y-auto md:border-l md:border-gray-200">
           {/* Transcription section */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
@@ -175,19 +179,19 @@ export default function VideoDetailPage() {
           <div className="card">
             <h2 className="font-semibold text-gray-700 mb-3">Annotations</h2>
 
-            {/* Tab navigation */}
-            <div className="flex gap-1 overflow-x-auto pb-2 mb-4">
+            {/* Tab navigation — 3-col grid */}
+            <div className="grid grid-cols-3 gap-1.5 mb-4">
               {tabs.map(({ id: tabId, label, icon: Icon }) => (
                 <button
                   key={tabId}
                   onClick={() => setActiveTab(tabId)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors
+                  className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg text-xs font-medium transition-colors
                     ${activeTab === tabId
                       ? 'bg-mhmr-olive text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                 >
-                  <Icon size={13} />
+                  <Icon size={15} />
                   {label}
                 </button>
               ))}
