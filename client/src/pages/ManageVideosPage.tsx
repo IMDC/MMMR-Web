@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Layers, X, Check, Loader2 } from 'lucide-react';
+import { Search, Plus, Layers, X, Check, Loader2, Camera } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useVideoSetStore } from '../store/videoSetStore';
 import Header from '../components/layout/Header';
@@ -114,13 +114,19 @@ export default function ManageVideosPage() {
               <>
                 <button
                   onClick={() => setSelectMode(true)}
-                  className="text-white/80 hover:text-white"
-                  aria-label="Select videos to add to set"
+                  className="flex items-center gap-1 text-white/80 hover:text-white text-sm font-medium"
                 >
-                  <Layers size={20} aria-hidden="true" />
+                  <Plus size={16} aria-hidden="true" />
+                  Add to set
                 </button>
-                <button onClick={() => navigate('/record')} className="text-white/80 hover:text-white">
-                  <Plus size={20} />
+                <span className="w-0.5 h-5 bg-white/50" aria-hidden="true" />
+                <button
+                  onClick={() => navigate('/record')}
+                  className="flex items-center gap-1 text-white/80 hover:text-white text-sm font-medium"
+                  aria-label="Record new video"
+                >
+                  <Camera size={20} aria-hidden="true" />
+                  Record
                 </button>
               </>
             )}
