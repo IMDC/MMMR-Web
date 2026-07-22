@@ -191,10 +191,10 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               {/* Add to set */}
               <button
                 onClick={openSetModal}
-                className="text-gray-400 hover:text-mhmr-olive transition-colors"
-                aria-label="Add to video set"
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-mhmr-olive transition-colors font-medium"
               >
-                <Layers size={18} aria-hidden="true" />
+                <Plus size={13} aria-hidden="true" />
+                Add to set
               </button>
 
               {/* Delete */}
