@@ -128,7 +128,7 @@ export default function VideoDetailPage() {
 
         {/* Left: video player */}
         <div className="p-4 md:w-[55%] md:shrink-0 md:flex md:flex-col md:justify-start md:overflow-hidden">
-          <VideoPlayer filename={video.filename} />
+          <VideoPlayer filename={video.filename} knownDuration={video.duration} />
 
           {video.flagged_for_harm && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
@@ -177,7 +177,7 @@ export default function VideoDetailPage() {
 
           {/* Annotations */}
           <div className="card">
-            <h2 className="font-semibold text-gray-700 mb-3">Annotations</h2>
+            <h2 className="font-semibold text-gray-700 mb-3">Markups</h2>
 
             {/* Tab navigation — 3-col grid */}
             <div className="grid grid-cols-3 gap-1.5 mb-4">

@@ -6,14 +6,15 @@ interface Props {
   filename: string;
   className?: string;
   autoPlay?: boolean;
+  knownDuration?: number;
 }
 
-export default function VideoPlayer({ filename, className = '', autoPlay = false }: Props) {
+export default function VideoPlayer({ filename, className = '', autoPlay = false, knownDuration }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(knownDuration ?? 0);
   const [currentTime, setCurrentTime] = useState(0);
 
   const streamUrl = videosApi.streamUrl(filename);
@@ -23,19 +24,27 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
     if (!v) return;
 
     const onTimeUpdate = () => {
+      const d = isFinite(v.duration) ? v.duration : (knownDuration ?? 0);
       setCurrentTime(v.currentTime);
-      setProgress(v.duration ? (v.currentTime / v.duration) * 100 : 0);
+      setProgress(d ? (v.currentTime / d) * 100 : 0);
     };
-    const onLoadedMetadata = () => setDuration(v.duration);
+    const onLoadedMetadata = () => {
+      setDuration(isFinite(v.duration) ? v.duration : (knownDuration ?? 0));
+    };
+    const onDurationChange = () => {
+      if (isFinite(v.duration)) setDuration(v.duration);
+    };
     const onEnded = () => setPlaying(false);
 
     v.addEventListener('timeupdate', onTimeUpdate);
     v.addEventListener('loadedmetadata', onLoadedMetadata);
+    v.addEventListener('durationchange', onDurationChange);
     v.addEventListener('ended', onEnded);
 
     return () => {
       v.removeEventListener('timeupdate', onTimeUpdate);
       v.removeEventListener('loadedmetadata', onLoadedMetadata);
+      v.removeEventListener('durationchange', onDurationChange);
       v.removeEventListener('ended', onEnded);
     };
   }, []);
@@ -73,6 +82,7 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
   };
 
   const formatTime = (s: number) => {
+    if (!isFinite(s) || s < 0) return '--:--';
     const m = Math.floor(s / 60);
     const sec = Math.floor(s % 60);
     return `${m}:${String(sec).padStart(2, '0')}`;
