@@ -1,12 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Video, Layers, BarChart2, Share2, HelpCircle, X, LogOut } from 'lucide-react';
+import { Home, Video, Clapperboard, BarChart2, Share2, HelpCircle, X, LogOut } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home', exact: true },
   { to: '/videos', icon: Video, label: 'Manage Videos' },
-  { to: '/videosets', icon: Layers, label: 'Video Sets' },
+  { to: '/videosets', icon: Clapperboard, label: 'Video Sets' },
   { to: '/analysis', icon: BarChart2, label: 'Data Analysis' },
   { to: '/sharing', icon: Share2, label: 'Sharing' },
 ];
