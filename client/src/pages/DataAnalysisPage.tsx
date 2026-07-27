@@ -5,7 +5,6 @@ import { useVideoSetStore } from '../store/videoSetStore';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoStore } from '../store/videoStore';
 import Header from '../components/layout/Header';
-import Loader from '../components/common/Loader';
 import SentimentBadge from '../components/common/SentimentBadge';
 
 const analysisCards = [
@@ -39,14 +38,24 @@ const analysisCards = [
   },
 ];
 
+const AI_PREF_KEY = 'mhmr_ai_reports';
+
 export default function DataAnalysisPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { videoSets, fetchSets } = useVideoSetStore();
   const { videos, fetchVideos } = useVideoStore();
-  const { analyzeVideoSet, isAnalyzing, clearCache } = useAnalysisStore();
+  const { analyzeVideoSet, clearCache } = useAnalysisStore();
   const [selectedSetId, setSelectedSetId] = useState(searchParams.get('setId') || '');
-  const [aiOptedIn, setAiOptedIn] = useState(false);
+
+  // Global AI preference (persisted)
+  const [aiGlobalEnabled, setAiGlobalEnabled] = useState(
+    () => localStorage.getItem(AI_PREF_KEY) === 'true'
+  );
+
+  // Modal states
+  const [showToggleConfirm, setShowToggleConfirm] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
@@ -63,16 +72,66 @@ export default function DataAnalysisPage() {
   const setVideos = videos.filter(v => selectedSet?.videoIDs.includes(v._id));
   const transcribedCount = setVideos.filter(v => v.isTranscribed).length;
 
-  const handleGenerateAnalysis = async () => {
+  // ── Toggle handlers ──────────────────────────────────────────────
+  const handleToggle = () => {
+    if (aiGlobalEnabled) {
+      setAiGlobalEnabled(false);
+      localStorage.setItem(AI_PREF_KEY, 'false');
+    } else {
+      setShowToggleConfirm(true);
+    }
+  };
+
+  const confirmEnableGlobal = () => {
+    setAiGlobalEnabled(true);
+    localStorage.setItem(AI_PREF_KEY, 'true');
+    setShowToggleConfirm(false);
+  };
+
+  // ── Analysis runner ───────────────────────────────────────────────
+  const runAnalysisAndNavigate = async () => {
     if (!selectedSetId) return;
     setAnalyzing(true);
     clearCache(selectedSetId);
     try {
       await analyzeVideoSet(selectedSetId);
       await Promise.all([fetchSets(), fetchVideos()]);
+      navigate(`/analysis/${selectedSetId}/report`);
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  // ── Card click ────────────────────────────────────────────────────
+  const handleCardClick = async (id: string) => {
+    if (id !== 'report') {
+      navigate(`/analysis/${selectedSetId}/${id}`);
+      return;
+    }
+    // Already have a report — just navigate
+    if (selectedSet?.isSummaryGenerated) {
+      navigate(`/analysis/${selectedSetId}/report`);
+      return;
+    }
+    // Need to generate — check global preference
+    if (aiGlobalEnabled) {
+      await runAnalysisAndNavigate();
+    } else {
+      setShowConsentModal(true);
+    }
+  };
+
+  // ── Consent modal responses ───────────────────────────────────────
+  const handleConsentYes = async () => {
+    setShowConsentModal(false);
+    await runAnalysisAndNavigate();
+  };
+
+  const handleConsentYesForAll = async () => {
+    setAiGlobalEnabled(true);
+    localStorage.setItem(AI_PREF_KEY, 'true');
+    setShowConsentModal(false);
+    await runAnalysisAndNavigate();
   };
 
   return (
@@ -108,50 +167,34 @@ export default function DataAnalysisPage() {
           )}
         </div>
 
-        {/* AI opt-in */}
-        {selectedSet && (
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-800 text-sm">AI Text Reports</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Enable to generate AI-powered summaries and sentiment analysis
-                </p>
-              </div>
-              <button
-                role="switch"
-                aria-checked={aiOptedIn}
-                aria-label="Enable AI Text Reports"
-                onClick={() => setAiOptedIn(v => !v)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${aiOptedIn ? 'bg-mhmr-olive' : 'bg-gray-300'}`}
-              >
-                <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${aiOptedIn ? 'translate-x-6' : ''}`} aria-hidden="true" />
-              </button>
+        {/* Global AI toggle */}
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-800 text-sm">AI Text Reports</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {aiGlobalEnabled
+                  ? 'AI reports are enabled — clicking Text Report will generate automatically'
+                  : 'AI reports are off — you\'ll be asked each time you open a Text Report'}
+              </p>
             </div>
-
-            {aiOptedIn && (
-              <div className="mt-4">
-                {selectedSet.isSummaryGenerated && (
-                  <div className="mb-3 flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Last sentiment:</span>
-                    {selectedSet.sentiment && <SentimentBadge sentiment={selectedSet.sentiment} />}
-                  </div>
-                )}
-                <button
-                  onClick={handleGenerateAnalysis}
-                  disabled={analyzing || transcribedCount === 0}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                >
-                  {analyzing ? (
-                    <><Loader2 size={16} className="animate-spin" /> Generating...</>
-                  ) : (
-                    selectedSet.isSummaryGenerated ? 'Regenerate Analysis' : 'Generate Analysis'
-                  )}
-                </button>
-              </div>
-            )}
+            <button
+              role="switch"
+              aria-checked={aiGlobalEnabled}
+              aria-label="Enable AI Text Reports globally"
+              onClick={handleToggle}
+              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${aiGlobalEnabled ? 'bg-mhmr-olive' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${aiGlobalEnabled ? 'translate-x-6' : ''}`} aria-hidden="true" />
+            </button>
           </div>
-        )}
+          {selectedSet?.isSummaryGenerated && selectedSet.sentiment && (
+            <div className="mt-3 flex items-center gap-2">
+              <span className="text-xs text-gray-500">Last report sentiment:</span>
+              <SentimentBadge sentiment={selectedSet.sentiment} />
+            </div>
+          )}
+        </div>
 
         {/* Analysis cards */}
         {selectedSetId && (
@@ -159,7 +202,7 @@ export default function DataAnalysisPage() {
             {analysisCards.map(({ id, label, description, icon: Icon, color }) => (
               <button
                 key={id}
-                onClick={() => navigate(`/analysis/${selectedSetId}/${id}`)}
+                onClick={() => handleCardClick(id)}
                 className="card text-left hover:shadow-md transition-shadow active:scale-[0.98]"
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
@@ -182,6 +225,91 @@ export default function DataAnalysisPage() {
           </div>
         )}
       </div>
+
+      {/* ── Toggle-on confirmation modal ── */}
+      {showToggleConfirm && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          role="presentation"
+          onClick={() => setShowToggleConfirm(false)}
+          onKeyDown={e => e.key === 'Escape' && setShowToggleConfirm(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="toggle-confirm-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 id="toggle-confirm-title" className="font-bold text-gray-800 mb-2">Enable AI Text Reports?</h2>
+            <p className="text-sm text-gray-600 mb-5">
+              When enabled, new video sets will automatically use AI-generated text reports without asking each time.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowToggleConfirm(false)}
+                className="flex-1 btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEnableGlobal}
+                className="flex-1 btn-primary"
+              >
+                Enable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Per-set AI consent modal ── */}
+      {showConsentModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          role="presentation"
+          onClick={() => setShowConsentModal(false)}
+          onKeyDown={e => e.key === 'Escape' && setShowConsentModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="consent-modal-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 id="consent-modal-title" className="font-bold text-gray-800 mb-2">Use AI for Text Report?</h2>
+            <p className="text-sm text-gray-600 mb-5">
+              Would you like to opt in to AI-generated text reports? This will send transcripts from the selected video set to an external AI service (ChatGPT).
+            </p>
+            <div className="flex flex-col gap-2">
+              <button onClick={handleConsentYesForAll} className="btn-primary w-full">
+                Yes, and enable for all future sets
+              </button>
+              <button onClick={handleConsentYes} className="btn-secondary w-full">
+                Yes, just this once
+              </button>
+              <button
+                onClick={() => setShowConsentModal(false)}
+                className="w-full py-2 text-sm text-gray-500 hover:text-gray-700"
+              >
+                No
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Generating overlay ── */}
+      {analyzing && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-3">
+            <Loader2 size={32} className="animate-spin text-mhmr-olive" />
+            <p className="font-semibold text-gray-800">Generating report...</p>
+            <p className="text-xs text-gray-400">This may take a moment</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
