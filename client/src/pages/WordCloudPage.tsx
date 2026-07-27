@@ -1,12 +1,10 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Settings, X, ChevronDown } from 'lucide-react';
-import cloud from 'd3-cloud';
+import WordCloud from 'wordcloud';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoSetStore } from '../store/videoSetStore';
 import Loader from '../components/common/Loader';
-
-const CLOUD_HEIGHT = 500;
 
 const PALETTES = [
   {
@@ -17,7 +15,7 @@ const PALETTES = [
   {
     label: 'Palette 2',
     value: 'Wong',
-    colors: ['#000000', '#E69F00', '#56B4E9', '#009E73', '#F0E442', '#0072B2', '#D55E00', '#CC79A7'],
+    colors: ['#E69F00', '#56B4E9', '#009E73', '#0072B2', '#D55E00', '#CC79A7', '#F0E442'],
   },
   {
     label: 'Palette 3',
@@ -25,18 +23,6 @@ const PALETTES = [
     colors: ['#332288', '#117733', '#44AA99', '#88CCEE', '#DDCC77', '#CC6677', '#AA4499', '#882255'],
   },
 ];
-
-interface BaseWord {
-  text: string;
-  value: number;
-  x: number;
-  y: number;
-  size: number;
-}
-
-interface LayoutWord extends BaseWord {
-  color: string;
-}
 
 export default function WordCloudPage() {
   const { setId } = useParams<{ setId: string }>();
@@ -46,9 +32,8 @@ export default function WordCloudPage() {
 
   const [allWords, setAllWords] = useState<{ text: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [baseLayout, setBaseLayout] = useState<BaseWord[]>([]);
-  const [layoutWords, setLayoutWords] = useState<LayoutWord[]>([]);
-  const [laying, setLaying] = useState(false);
+  const [rendering, setRendering] = useState(false);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; word: string; count: number } | null>(null);
 
   const [hiddenWords, setHiddenWords] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
@@ -57,15 +42,20 @@ export default function WordCloudPage() {
   const [selectedPalette, setSelectedPalette] = useState(PALETTES[0]);
   const [showPaletteDropdown, setShowPaletteDropdown] = useState(false);
 
-  const svgWrapperRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
 
+  const videoSet = videoSets.find(s => s._id === setId);
+  const setName = videoSet?.name ?? '';
+
+  // Track wrapper width → derive canvas dimensions
   useEffect(() => {
-    const el = svgWrapperRef.current;
+    const el = wrapperRef.current;
     if (!el) return;
     const update = () => {
-      const w = el.getBoundingClientRect().width;
-      if (w > 0) setContainerWidth(w);
+      const { width } = el.getBoundingClientRect();
+      if (width > 0) setCanvasSize({ w: Math.floor(width), h: Math.floor(width * 0.38) });
     };
     update();
     const ro = new ResizeObserver(update);
@@ -73,17 +63,13 @@ export default function WordCloudPage() {
     return () => ro.disconnect();
   }, []);
 
-  const videoSet = videoSets.find(s => s._id === setId);
-  const setName = videoSet?.name ?? '';
-
   useEffect(() => { fetchSets(); }, []);
 
-  // Always fetch with minCount=1 — all words available, user filters via hidden set
   useEffect(() => {
     if (!setId) return;
     setLoading(true);
     fetchFrequencyData(setId, 1)
-      .then(result => setAllWords(result.wordCloudData?.slice(0, 150) || []))
+      .then(result => setAllWords(result.wordCloudData?.slice(0, 200) || []))
       .finally(() => setLoading(false));
   }, [setId]);
 
@@ -97,70 +83,86 @@ export default function WordCloudPage() {
     return q ? allWords.filter(w => w.text.toLowerCase().includes(q)) : allWords;
   }, [allWords, wordSearch]);
 
-  // Dynamic threshold based on word count (same as Android)
-  const thresholdedWords = useMemo(() => {
-    const sorted = [...displayWords].sort((a, b) => b.value - a.value);
-    const count = sorted.length;
-    let maxWords = 100;
-    let minFrequency = 1;
-    if (count > 200)      { maxWords = 80;  minFrequency = Math.max(2, Math.floor(sorted[50]?.value || 2)); }
-    else if (count > 150) { maxWords = 100; minFrequency = Math.max(1, Math.floor(sorted[75]?.value || 1)); }
-    else if (count > 100) { maxWords = 120; }
-    else if (count > 50)  { maxWords = 80; }
-    else                  { maxWords = 50; }
-    return sorted.filter(w => w.value >= minFrequency).slice(0, maxWords);
-  }, [displayWords]);
+  // Sorted word list for wordcloud2: [[text, weight], ...]
+  const wordList = useMemo((): [string, number][] =>
+    [...displayWords]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 150)
+      .map(w => [w.text, w.value]),
+  [displayWords]);
 
-  // Effect 1: compute positions only — palette intentionally excluded
-  // so switching palette never re-layouts and never causes overlap
-  useEffect(() => {
-    if (thresholdedWords.length === 0 || containerWidth === 0) return;
+  // Render onto canvas whenever words, palette, or size changes
+  const render = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || canvasSize.w === 0 || wordList.length === 0) return;
 
-    const count = thresholdedWords.length;
-    // Slightly conservative max font so d3-cloud can place all words without gaps
-    const minFont = count > 80 ? 10 : count > 50 ? 12 : count > 30 ? 14 : 16;
-    const maxFont = count > 80 ? 30 : count > 50 ? 44 : count > 30 ? 58 : 72;
+    // Set physical canvas resolution
+    canvas.width = canvasSize.w;
+    canvas.height = canvasSize.h;
 
-    const maxVal = Math.max(...thresholdedWords.map(w => w.value));
-    const minVal = Math.min(...thresholdedWords.map(w => w.value));
-    const range = maxVal - minVal || 1;
-    const fontSize = (v: number) =>
-      Math.round(minFont + Math.sqrt((v - minVal) / range) * (maxFont - minFont));
-
-    setLaying(true);
-
-    cloud<{ text: string; value: number }>()
-      .size([containerWidth, CLOUD_HEIGHT])
-      .words(thresholdedWords.map(w => ({ ...w })))
-      .padding(2)
-      .rotate(0)
-      .font('Arial')
-      .fontWeight('bold')
-      .fontSize(d => fontSize(d.value!))
-      .spiral('archimedean')
-      .on('end', (words: any[]) => {
-        // Only keep words that d3-cloud successfully placed (x/y defined and non-zero origin)
-        setBaseLayout(
-          words
-            .filter(w => w.x !== undefined && w.y !== undefined)
-            .map(w => ({ text: w.text, value: w.value, x: w.x, y: w.y, size: w.size })),
-        );
-        setLaying(false);
-      })
-      .start();
-  }, [thresholdedWords, containerWidth]); // palette NOT here
-
-  // Effect 2: apply colors — never repositions, just recolors
-  useEffect(() => {
-    if (baseLayout.length === 0) return;
     const palette = selectedPalette.colors;
-    setLayoutWords(
-      baseLayout.map((w, i) => ({
-        ...w,
-        color: palette[i % palette.length],
-      })),
-    );
-  }, [baseLayout, selectedPalette]);
+    // Assign colors in frequency order so most-frequent words get distinct colors
+    const wordColorMap: Record<string, string> = {};
+    wordList.forEach(([word], i) => {
+      wordColorMap[word] = palette[i % palette.length];
+    });
+
+    const maxVal = wordList[0]?.[1] ?? 1;
+
+    setRendering(true);
+
+    WordCloud(canvas, {
+      list: wordList,
+      // gridSize controls placement resolution — smaller = tighter packing
+      gridSize: Math.max(2, Math.round(canvasSize.w / 120)),
+      weightFactor: (size: number) => {
+        // Exponent > 1 makes low-frequency words much smaller vs the top word
+        const ratio = size / maxVal;
+        const maxPx = canvasSize.h * 0.16;
+        const minPx = Math.max(7, canvasSize.h * 0.012);
+        return Math.max(minPx, Math.pow(ratio, 1.8) * maxPx);
+      },
+      fontFamily: 'Arial, sans-serif',
+      fontWeight: 'bold',
+      color: (word: string) => wordColorMap[word] ?? palette[0],
+      rotateRatio: 0,       // all words horizontal, like sample image
+      rotationSteps: 1,
+      backgroundColor: 'transparent',
+      drawOutOfBound: false,
+      shrinkToFit: true,    // auto-shrinks fonts until everything fits
+      origin: [canvasSize.w / 2, canvasSize.h / 2], // largest word centered
+      hover: (item: [string, number] | null, _dim: unknown, event: MouseEvent) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        if (item) {
+          const rect = canvas.getBoundingClientRect();
+          // Scale mouse position from display coords to canvas logical coords
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          setTooltip({
+            x: (event.clientX - rect.left) / scaleX,
+            y: (event.clientY - rect.top) / scaleY,
+            word: item[0],
+            count: item[1],
+          });
+          canvas.style.cursor = 'pointer';
+        } else {
+          setTooltip(null);
+          canvas.style.cursor = 'default';
+        }
+      },
+      click: (item: [string, number]) => {
+        setSelectedWord(item[0]);
+        navigate(`/analysis/${setId}/line`);
+      },
+    });
+
+    setTimeout(() => setRendering(false), 150);
+  }, [wordList, selectedPalette, canvasSize, setId, navigate, setSelectedWord]);
+
+  useEffect(() => {
+    if (!loading) render();
+  }, [render, loading]);
 
   const toggleHidden = (word: string) => {
     setHiddenWords(prev => {
@@ -169,11 +171,6 @@ export default function WordCloudPage() {
       return next;
     });
   };
-
-  // viewBox maps d3-cloud's (0,0) center to middle of SVG — guaranteed correct centering
-  const viewBox = containerWidth > 0
-    ? `${-containerWidth / 2} ${-CLOUD_HEIGHT / 2} ${containerWidth} ${CLOUD_HEIGHT}`
-    : undefined;
 
   return (
     <div className="flex flex-col h-full">
@@ -243,8 +240,8 @@ export default function WordCloudPage() {
             </button>
           </div>
 
-          {/* SVG wrapper — always in DOM so ResizeObserver fires on mount */}
-          <div ref={svgWrapperRef} style={{ width: '100%' }}>
+          {/* Canvas wrapper */}
+          <div ref={wrapperRef} className="w-full">
             {loading ? (
               <div className="flex justify-center py-16">
                 <Loader message="Building word cloud..." />
@@ -259,43 +256,38 @@ export default function WordCloudPage() {
                 All words are hidden. Open Word Settings to restore them.
               </p>
             ) : (
-              <div style={{ height: `${CLOUD_HEIGHT}px`, position: 'relative' }}>
-                {laying && (
+              <div
+                className="relative"
+                style={{ height: canvasSize.h || 400 }}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                {rendering && (
                   <div className="absolute inset-0 flex items-center justify-center bg-white/60 z-10">
                     <Loader message="Rendering..." />
                   </div>
                 )}
-                {viewBox && layoutWords.length > 0 && (
-                  <svg
-                    width="100%"
-                    height={CLOUD_HEIGHT}
-                    viewBox={viewBox}
-                    aria-label="Word cloud visualization"
+                <canvas
+                  ref={canvasRef}
+                  style={{ width: '100%', height: '100%' }}
+                  aria-label="Word cloud visualization"
+                />
+                {tooltip && canvasSize.w > 0 && (
+                  <div
+                    className="absolute z-20 pointer-events-none"
+                    style={{
+                      left: `${(tooltip.x / canvasSize.w) * 100}%`,
+                      top: `${(tooltip.y / canvasSize.h) * 100}%`,
+                      transform: 'translate(-50%, calc(-100% - 10px))',
+                    }}
                   >
-                    {layoutWords.map(word => (
-                      <text
-                        key={word.text}
-                        textAnchor="middle"
-                        transform={`translate(${word.x},${word.y})`}
-                        style={{
-                          fontSize: `${word.size}px`,
-                          fontFamily: 'Arial, sans-serif',
-                          fontWeight: 'bold',
-                          fill: word.color,
-                          cursor: 'pointer',
-                          userSelect: 'none',
-                        }}
-                        onClick={() => {
-                          setSelectedWord(word.text);
-                          navigate(`/analysis/${setId}/line`);
-                        }}
-                        role="button"
-                        aria-label={`View trend for ${word.text}`}
-                      >
-                        {word.text}
-                      </text>
-                    ))}
-                  </svg>
+                    <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+                      <span className="font-bold">{tooltip.word}</span>
+                      <span className="text-gray-300 ml-1.5">× {tooltip.count}</span>
+                      <div className="text-gray-400 mt-0.5">Click to view trend</div>
+                    </div>
+                    {/* Arrow */}
+                    <div className="w-2 h-2 bg-gray-900 rotate-45 mx-auto -mt-1" />
+                  </div>
                 )}
               </div>
             )}
@@ -329,7 +321,6 @@ export default function WordCloudPage() {
               </button>
             </div>
 
-            {/* Word list + search — no frequency filter */}
             <div className="px-5 pt-4 pb-3 border-b border-gray-100 shrink-0 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Words in cloud</p>
