@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Layers, Play, Plus, X, Check } from 'lucide-react';
+import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Clapperboard, Play, Plus, X, Check } from 'lucide-react';
 import { Video } from '../../types';
 import { useVideoStore } from '../../store/videoStore';
 import { useVideoSetStore } from '../../store/videoSetStore';
@@ -104,8 +104,8 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
         {selectable && (
           <div className="absolute top-3 right-3 z-10">
             {selected
-              ? <CheckSquare className="text-mhmr-olive" size={22} />
-              : <Square className="text-gray-300" size={22} />
+              ? <CheckSquare className="text-mhmr-olive drop-shadow" size={26} strokeWidth={2.5} />
+              : <Square className="text-gray-500 drop-shadow" size={26} strokeWidth={2.5} />
             }
           </div>
         )}
@@ -305,7 +305,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               {setModalTab === 'existing' ? (
                 videoSets.length === 0 ? (
                   <div className="text-center py-6 text-gray-400">
-                    <Layers size={32} className="mx-auto mb-2 opacity-40" />
+                    <Clapperboard size={32} className="mx-auto mb-2 opacity-40" />
                     <p className="text-sm">No video sets yet.</p>
                     <button
                       onClick={() => setSetModalTab('new')}
