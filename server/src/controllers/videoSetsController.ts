@@ -94,11 +94,5 @@ export async function removeVideoFromSet(req: Request, res: Response) {
   );
   if (!set) return res.status(404).json({ error: 'Video set not found' });
 
-  // If set is now empty, delete it
-  if (set.videoIDs.length === 0) {
-    await set.deleteOne();
-    return res.json({ message: 'Video removed; set was empty and has been deleted' });
-  }
-
   res.json(set);
 }
