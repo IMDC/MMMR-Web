@@ -15,6 +15,7 @@ import WordCloudPage from './pages/WordCloudPage';
 import TextReportPage from './pages/TextReportPage';
 import SharingPage from './pages/SharingPage';
 import HelpPage from './pages/HelpPage';
+import SettingsPage from './pages/SettingsPage';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
       { path: 'analysis/:setId/report', element: <TextReportPage /> },
           { path: 'sharing', element: <SharingPage /> },
           { path: 'help', element: <HelpPage /> },
+          { path: 'settings', element: <SettingsPage /> },
           { path: '*', element: <Navigate to="/" replace /> },
         ],
       },

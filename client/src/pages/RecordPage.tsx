@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Mic, MicOff, Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
+import { useAuthStore } from '../store/authStore';
 import { videosApi } from '../api/videos';
 import Header from '../components/layout/Header';
 import ProgressBar from '../components/common/ProgressBar';
@@ -11,6 +12,8 @@ type RecordingState = 'idle' | 'preview' | 'recording' | 'recorded' | 'uploading
 export default function RecordPage() {
   const navigate = useNavigate();
   const { uploadVideo } = useVideoStore();
+  const userId = useAuthStore(s => s.user?.id ?? 'guest');
+  const autotranscribeKey = `mhmr_autotranscribe_${userId}`;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -120,7 +123,7 @@ export default function RecordPage() {
       const video = await uploadVideo(file, title || new Date().toLocaleString(), pct => setUploadProgress(pct));
       setSavedVideoId(video._id);
 
-      const pref = localStorage.getItem('mhmr_autotranscribe');
+      const pref = localStorage.getItem(autotranscribeKey);
       if (pref === null) {
         // First time — show preference prompt before post-save modal
         setShowTranscribePrompt(true);
@@ -137,7 +140,7 @@ export default function RecordPage() {
   };
 
   const handleTranscribePref = (enabled: boolean) => {
-    localStorage.setItem('mhmr_autotranscribe', String(enabled));
+    localStorage.setItem(autotranscribeKey, String(enabled));
     setShowTranscribePrompt(false);
     if (enabled && savedVideoId) {
       runTranscription(savedVideoId);
@@ -305,7 +308,7 @@ export default function RecordPage() {
                   try {
                     const video = await uploadVideo(file, file.name.replace(/\.[^/.]+$/, ''), pct => setUploadProgress(pct));
                     setSavedVideoId(video._id);
-                    const pref = localStorage.getItem('mhmr_autotranscribe');
+                    const pref = localStorage.getItem(autotranscribeKey);
                     if (pref === null) {
                       setShowTranscribePrompt(true);
                     } else if (pref === 'true') {

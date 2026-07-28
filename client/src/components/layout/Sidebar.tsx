@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Video, Clapperboard, BarChart2, Share2, HelpCircle, X, LogOut } from 'lucide-react';
+import { Home, Video, Clapperboard, BarChart2, Share2, HelpCircle, Settings, X, LogOut } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 
@@ -82,6 +82,17 @@ export default function Sidebar() {
 
         {/* Help + account */}
         <div className="border-t border-gray-100 p-3 space-y-1">
+          <NavLink
+            to="/settings"
+            onClick={toggleSidebar}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors
+              ${isActive ? 'text-mhmr-olive bg-mhmr-olive/10' : 'text-gray-500 hover:text-mhmr-olive hover:bg-gray-50'}`
+            }
+          >
+            <Settings size={19} />
+            Settings
+          </NavLink>
           <NavLink
             to="/help"
             onClick={toggleSidebar}
