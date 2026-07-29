@@ -56,24 +56,46 @@ export default function PainScalePicker({ value, numericScale, onChange }: Props
     setCustomInput('');
   };
 
+  const category = scale <= 0
+    ? null
+    : scale <= 1.5
+    ? { label: 'Mild', color: 'text-amber-600', bg: 'bg-amber-50' }
+    : scale <= 2.5
+    ? { label: 'Moderate', color: 'text-orange-600', bg: 'bg-orange-50' }
+    : { label: 'Severe', color: 'text-red-600', bg: 'bg-red-50' };
+
   return (
     <div className="space-y-4">
       {/* Numeric scale */}
       <div>
-        <div className="flex justify-between items-center mb-1">
+        <div className="flex justify-between items-center mb-2">
           <label htmlFor="pain-numeric-scale" className="text-xs text-gray-500">Overall Pain Level</label>
-          <span className="text-sm font-bold text-mhmr-olive" aria-live="polite">{scale}/3</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-gray-800" aria-live="polite">{scale.toFixed(1)}</span>
+            {category && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${category.bg} ${category.color}`}>
+                {category.label}
+              </span>
+            )}
+            {!category && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">No pain</span>
+            )}
+          </div>
         </div>
         <input
           id="pain-numeric-scale"
-          type="range" min={0} max={3} step={0.5}
+          type="range" min={0} max={3} step={0.1}
           value={scale}
           onChange={e => handleScale(parseFloat(e.target.value))}
           className="w-full accent-mhmr-olive"
           aria-valuemin={0} aria-valuemax={3} aria-valuenow={scale}
+          aria-label="Pain level"
         />
-        <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-          <span>No pain</span><span>Mild</span><span>Moderate</span><span>Severe</span>
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>0 · No pain</span>
+          <span>1.5 · Mild</span>
+          <span>2.5 · Moderate</span>
+          <span>3 · Severe</span>
         </div>
       </div>
 
