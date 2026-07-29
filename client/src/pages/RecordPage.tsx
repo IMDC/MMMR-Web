@@ -1,10 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Mic, MicOff, Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
+import { Camera, Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
 import { videosApi } from '../api/videos';
-import Header from '../components/layout/Header';
 import ProgressBar from '../components/common/ProgressBar';
 
 type RecordingState = 'idle' | 'preview' | 'recording' | 'recorded' | 'uploading' | 'saved';
@@ -164,168 +163,107 @@ export default function RecordPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Record Video" subtitle="Record a health journal entry" />
-
-      {/* ── Responsive wrapper ──
-          Default (phone):        scrollable column, small portrait camera
-          md + portrait (iPad ↕): full-height column, camera fills space, controls pinned bottom
-          md + landscape (iPad ↔) and lg+ (laptop): scrollable, wide landscape camera
-      */}
-      <div className={state === 'recorded'
-        ? 'flex-1 flex flex-col overflow-hidden p-4 gap-4'
-        : 'flex-1 portrait:overflow-hidden portrait:p-0 portrait:space-y-0 portrait:flex portrait:flex-col landscape:overflow-y-auto landscape:p-5 landscape:space-y-5'
-      }>
+      <div className="flex-1 overflow-hidden flex flex-col gap-3 px-8 pt-12 pb-4 lg:pt-4">
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 portrait:m-4 portrait:mb-0">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 shrink-0">
             {error}
           </div>
         )}
 
-        {/* Video preview / recording area */}
-        <div className={state === 'recorded'
-          ? 'relative bg-black flex-1 min-h-0 w-full rounded-2xl overflow-hidden'
-          : [
-              'relative bg-black overflow-hidden mx-auto',
-              'portrait:flex-1 portrait:w-full portrait:max-w-none portrait:rounded-none portrait:aspect-auto',
-              'landscape:aspect-video landscape:rounded-2xl landscape:max-w-sm',
-              'sm:landscape:max-w-md md:landscape:max-w-lg lg:landscape:max-w-3xl xl:landscape:max-w-2xl',
-            ].join(' ')
-        }>
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            playsInline
-            controls={state === 'recorded'}
-          />
-
-          {state === 'idle' && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-white">
-                <Camera size={48} className="mx-auto mb-3 opacity-50" />
-                <p className="text-sm opacity-60">Camera preview will appear here</p>
-              </div>
-            </div>
-          )}
-
-          {state === 'recording' && (
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1" role="status" aria-live="polite">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
-              <span className="text-white text-xs font-bold uppercase tracking-wider">REC</span>
-              <span className="text-white text-sm font-mono">{formatTime(elapsed)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Upload progress */}
-        {state === 'uploading' && (
-          <div className="card portrait:mx-4">
-            <ProgressBar progress={uploadProgress} message="Uploading video..." />
-          </div>
-        )}
-
-        {/* Title input */}
-        {(state === 'recorded' || state === 'uploading') && (
-          <div className={state === 'recorded' ? 'shrink-0' : 'portrait:px-4 portrait:pt-3'}>
-            <label htmlFor="video-title" className="text-sm font-medium text-gray-700 mb-1 block">Video Title</label>
-            <input
-              id="video-title"
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder={new Date().toLocaleString()}
-              className="form-input"
+        {/* Video area — full width, fills remaining height */}
+        <div className="flex-1 min-h-0 md:max-h-[62vh] lg:max-h-none relative bg-black rounded-2xl overflow-hidden">
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline
+              controls={state === 'recorded'}
             />
-          </div>
-        )}
 
-        {/* Controls — pinned to bottom on iPad portrait */}
-        <div className={state === 'recorded'
-          ? 'flex gap-3 shrink-0'
-          : 'flex gap-3 portrait:shrink-0 portrait:p-4 portrait:border-t portrait:border-gray-100 portrait:bg-white'
-        }>
-          {state === 'idle' && (
-            <button onClick={startPreview} className="btn-primary flex-1 flex items-center justify-center gap-2">
-              <Camera size={18} />
-              Start Camera
-            </button>
+            {state === 'idle' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Camera size={48} className="mx-auto mb-3 opacity-50" />
+                  <p className="text-sm opacity-60">Camera preview will appear here</p>
+                </div>
+              </div>
+            )}
+
+            {state === 'recording' && (
+              <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1" role="status" aria-live="polite">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
+                <span className="text-white text-xs font-bold uppercase tracking-wider">REC</span>
+                <span className="text-white text-sm font-mono">{formatTime(elapsed)}</span>
+              </div>
+            )}
+          </div>
+
+        {/* Controls — centered, fixed width */}
+        <div className="shrink-0 w-full max-w-2xl mx-auto flex flex-col gap-3">
+
+          {/* Upload progress */}
+          {state === 'uploading' && (
+            <div className="card">
+              <ProgressBar progress={uploadProgress} message="Uploading video..." />
+            </div>
           )}
 
-          {state === 'preview' && (
-            <>
-              {/* <button
-                onClick={() => setAudioEnabled(a => !a)}
-                className={`p-3 rounded-lg border-2 transition-colors ${audioEnabled ? 'border-mhmr-olive text-mhmr-olive' : 'border-gray-200 text-gray-400'}`}
-              >
-                {audioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
-              </button> */}
+          {/* Title input */}
+          {(state === 'recorded' || state === 'uploading') && (
+            <div>
+              <label htmlFor="video-title" className="text-sm font-medium text-gray-700 mb-1 block">Video Title</label>
+              <input
+                id="video-title"
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder={new Date().toLocaleString()}
+                className="form-input"
+              />
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            {state === 'idle' && (
+              <button onClick={startPreview} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                <Camera size={18} />
+                Start Camera
+              </button>
+            )}
+
+            {state === 'preview' && (
               <button onClick={startRecording} className="btn-primary flex-1 flex items-center justify-center gap-2">
                 <Circle size={18} className="fill-current" />
                 Start Recording
               </button>
-            </>
-          )}
+            )}
 
-          {state === 'recording' && (
-            <button onClick={stopRecording} className="btn-danger flex-1 flex items-center justify-center gap-2">
-              <Square size={18} className="fill-current" />
-              Stop Recording
-            </button>
-          )}
-
-          {state === 'recorded' && (
-            <>
-              <button onClick={discard} className="btn-secondary flex-1">
-                Discard
+            {state === 'recording' && (
+              <button onClick={stopRecording} className="btn-danger flex-1 flex items-center justify-center gap-2">
+                <Square size={18} className="fill-current" />
+                Stop Recording
               </button>
-              <button onClick={save} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                <CheckCircle size={18} />
-                Save Video
-              </button>
-            </>
-          )}
+            )}
 
-          {state === 'uploading' && (
-            <button disabled className="btn-primary flex-1 flex items-center justify-center gap-2 opacity-70">
-              <Loader2 size={18} className="animate-spin" />
-              Uploading...
-            </button>
-          )}
+            {state === 'recorded' && (
+              <>
+                <button onClick={discard} className="btn-secondary flex-1">Discard</button>
+                <button onClick={save} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                  <CheckCircle size={18} />
+                  Save Video
+                </button>
+              </>
+            )}
+
+            {state === 'uploading' && (
+              <button disabled className="btn-primary flex-1 flex items-center justify-center gap-2 opacity-70">
+                <Loader2 size={18} className="animate-spin" />
+                Uploading...
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* {state === 'idle' && (
-          <div className="text-center">
-            <p className="text-sm text-gray-500">Or</p>
-            <label className="btn-secondary mt-2 inline-flex items-center gap-2 cursor-pointer">
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={async e => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  setState('uploading');
-                  try {
-                    const video = await uploadVideo(file, file.name.replace(/\.[^/.]+$/, ''), pct => setUploadProgress(pct));
-                    setSavedVideoId(video._id);
-                    const pref = localStorage.getItem(autotranscribeKey);
-                    if (pref === null) {
-                      setShowTranscribePrompt(true);
-                    } else if (pref === 'true') {
-                      videosApi.transcribe(video._id).catch(() => {});
-                      setAutoTranscribeStarted(true);
-                    }
-                    setState('saved');
-                  } catch (err: any) {
-                    setError(err.message);
-                    setState('idle');
-                  }
-                }}
-              />
-              Upload existing video
-            </label>
-          </div>
-        )} */}
       </div>
 
       {/* First-time auto-transcription prompt */}
