@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Zap, ZapOff } from 'lucide-react';
+import { Zap, ZapOff, FileText } from 'lucide-react';
 import Header from '../components/layout/Header';
 import { useAuthStore } from '../store/authStore';
 
 export default function SettingsPage() {
   const userId = useAuthStore(s => s.user?.id ?? 'guest');
   const autotranscribeKey = `mhmr_autotranscribe_${userId}`;
+  const aiPrefKey = `mhmr_ai_reports_${userId}`;
 
   const [autoTranscribe, setAutoTranscribe] = useState<boolean | null>(() => {
     const pref = localStorage.getItem(autotranscribeKey);
@@ -13,9 +14,29 @@ export default function SettingsPage() {
     return pref === 'true';
   });
 
+  const [aiReports, setAiReports] = useState(
+    () => localStorage.getItem(aiPrefKey) === 'true'
+  );
+  const [showAiConfirm, setShowAiConfirm] = useState(false);
+
   const toggle = (enabled: boolean) => {
     localStorage.setItem(autotranscribeKey, String(enabled));
     setAutoTranscribe(enabled);
+  };
+
+  const handleAiToggle = () => {
+    if (aiReports) {
+      localStorage.setItem(aiPrefKey, 'false');
+      setAiReports(false);
+    } else {
+      setShowAiConfirm(true);
+    }
+  };
+
+  const confirmAiEnable = () => {
+    localStorage.setItem(aiPrefKey, 'true');
+    setAiReports(true);
+    setShowAiConfirm(false);
   };
 
   return (
@@ -80,7 +101,77 @@ export default function SettingsPage() {
             </p>
           )}
         </div>
+
+        {/* AI Text Reports */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-50 text-orange-600">
+              <FileText size={18} />
+            </div>
+            <h2 className="font-semibold text-gray-800">AI Text Reports</h2>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-800 font-medium">
+                {aiReports ? 'Enabled' : 'Disabled'}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {aiReports
+                  ? 'Text reports generate automatically without asking each time'
+                  : "You'll be asked each time you open a Text Report"}
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={aiReports}
+              aria-label="Enable AI Text Reports"
+              onClick={handleAiToggle}
+              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${aiReports ? 'bg-mhmr-olive' : 'bg-gray-300'}`}
+            >
+              <span
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${aiReports ? 'translate-x-6' : ''}`}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+            When enabled, AI reports send your video transcripts to an external AI service (ChatGPT) to generate summaries and sentiment analysis.
+          </p>
+        </div>
       </div>
+
+      {/* AI enable confirmation modal */}
+      {showAiConfirm && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          role="presentation"
+          onClick={() => setShowAiConfirm(false)}
+          onKeyDown={e => e.key === 'Escape' && setShowAiConfirm(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-confirm-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <h2 id="ai-confirm-title" className="font-bold text-gray-800 mb-2">Enable AI Text Reports?</h2>
+            <p className="text-sm text-gray-600 mb-5">
+              When enabled, new video sets will automatically use AI-generated text reports without asking each time.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowAiConfirm(false)} className="flex-1 btn-secondary">
+                Cancel
+              </button>
+              <button onClick={confirmAiEnable} className="flex-1 btn-primary">
+                Enable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

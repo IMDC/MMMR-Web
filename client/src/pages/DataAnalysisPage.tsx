@@ -4,6 +4,7 @@ import { BarChart2, TrendingUp, Cloud, FileText, Loader2, ChevronRight } from 'l
 import { useVideoSetStore } from '../store/videoSetStore';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoStore } from '../store/videoStore';
+import { useAuthStore } from '../store/authStore';
 import Header from '../components/layout/Header';
 import SentimentBadge from '../components/common/SentimentBadge';
 
@@ -38,19 +39,19 @@ const analysisCards = [
   },
 ];
 
-const AI_PREF_KEY = 'mhmr_ai_reports';
-
 export default function DataAnalysisPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { videoSets, fetchSets } = useVideoSetStore();
   const { videos, fetchVideos } = useVideoStore();
   const { analyzeVideoSet, clearCache } = useAnalysisStore();
+  const userId = useAuthStore(s => s.user?.id ?? 'guest');
+  const aiPrefKey = `mhmr_ai_reports_${userId}`;
   const [selectedSetId, setSelectedSetId] = useState(searchParams.get('setId') || '');
 
   // Global AI preference (persisted)
   const [aiGlobalEnabled, setAiGlobalEnabled] = useState(
-    () => localStorage.getItem(AI_PREF_KEY) === 'true'
+    () => localStorage.getItem(`mhmr_ai_reports_${userId}`) === 'true'
   );
 
   // Modal states
@@ -76,7 +77,7 @@ export default function DataAnalysisPage() {
   const handleToggle = () => {
     if (aiGlobalEnabled) {
       setAiGlobalEnabled(false);
-      localStorage.setItem(AI_PREF_KEY, 'false');
+      localStorage.setItem(aiPrefKey, 'false');
     } else {
       setShowToggleConfirm(true);
     }
@@ -84,7 +85,7 @@ export default function DataAnalysisPage() {
 
   const confirmEnableGlobal = () => {
     setAiGlobalEnabled(true);
-    localStorage.setItem(AI_PREF_KEY, 'true');
+    localStorage.setItem(aiPrefKey, 'true');
     setShowToggleConfirm(false);
   };
 
@@ -129,7 +130,7 @@ export default function DataAnalysisPage() {
 
   const handleConsentYesForAll = async () => {
     setAiGlobalEnabled(true);
-    localStorage.setItem(AI_PREF_KEY, 'true');
+    localStorage.setItem(aiPrefKey, 'true');
     setShowConsentModal(false);
     await runAnalysisAndNavigate();
   };
