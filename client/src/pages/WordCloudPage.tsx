@@ -55,7 +55,10 @@ export default function WordCloudPage() {
     if (!el) return;
     const update = () => {
       const { width } = el.getBoundingClientRect();
-      if (width > 0) setCanvasSize({ w: Math.floor(width), h: Math.floor(width * 0.38) });
+      if (width > 0) {
+        const w = Math.min(Math.floor(width), 900);
+        setCanvasSize({ w, h: Math.floor(w * 0.5) });
+      }
     };
     update();
     const ro = new ResizeObserver(update);
@@ -257,8 +260,8 @@ export default function WordCloudPage() {
               </p>
             ) : (
               <div
-                className="relative"
-                style={{ height: canvasSize.h || 400 }}
+                className="relative mx-auto"
+                style={{ width: canvasSize.w || '100%', height: canvasSize.h || 400 }}
                 onMouseLeave={() => setTooltip(null)}
               >
                 {rendering && (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, Layers, ChevronRight, Trash2, Video } from 'lucide-react';
+import { Plus, ChevronRight, Trash2, Video, Clapperboard } from 'lucide-react';
 import { useVideoSetStore } from '../store/videoSetStore';
 import Header from '../components/layout/Header';
 import Loader from '../components/common/Loader';
@@ -48,7 +48,7 @@ export default function VideoSetsPage() {
           <div className="flex justify-center py-12"><Loader /></div>
         ) : videoSets.length === 0 ? (
           <div className="text-center py-16">
-            <Layers size={48} className="text-gray-300 mx-auto mb-3" />
+            <Clapperboard size={48} className="text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 mb-2">No video sets yet</p>
             <p className="text-sm text-gray-400 mb-5">Create a set to group related videos for analysis</p>
             <button onClick={() => setShowCreate(true)} className="btn-primary">Create Video Set</button>
@@ -63,7 +63,7 @@ export default function VideoSetsPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-mhmr-olive/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Layers className="text-mhmr-olive" size={20} />
+                    <Clapperboard className="text-mhmr-olive" size={20} />
                   </div>
 
                   <div className="flex-1 min-w-0">

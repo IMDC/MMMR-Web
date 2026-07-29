@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Layers, X, Check, Loader2, Camera } from 'lucide-react';
+import { Search, Plus, X, Check, Loader2, Camera, Clapperboard } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useVideoSetStore } from '../store/videoSetStore';
 import Header from '../components/layout/Header';
@@ -259,7 +259,7 @@ export default function ManageVideosPage() {
               {setModalTab === 'existing' ? (
                 videoSets.length === 0 ? (
                   <div className="text-center py-6 text-gray-400">
-                    <Layers size={32} className="mx-auto mb-2 opacity-40" />
+                    <Clapperboard size={32} className="mx-auto mb-2 opacity-40" />
                     <p className="text-sm">No video sets yet.</p>
                     <button
                       onClick={() => setSetModalTab('new')}

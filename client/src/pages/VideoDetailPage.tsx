@@ -141,7 +141,7 @@ export default function VideoDetailPage() {
         </div>
 
         {/* Right: transcript + annotations */}
-        <div className="p-4 space-y-4 md:flex-1 md:overflow-y-auto md:border-l md:border-gray-200">
+        <div className="p-4 space-y-4 md:flex-1 md:overflow-y-auto md:border-0 md:border-gray-200">
           {/* Transcription section */}
           <div className="card">
             <div className="flex items-center justify-between mb-3">
