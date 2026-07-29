@@ -23,11 +23,6 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
-      <div className="bg-mhmr-olive h-14 pl-14 pr-6 flex items-center shrink-0">
-        <h1 className="text-white font-bold text-base">Home</h1>
-      </div>
-
       {/* Main content — centered vertically */}
       <div className="flex-1 flex flex-col items-center justify-evenly px-8 py-6">
 
@@ -56,13 +51,11 @@ export default function HomePage() {
 
         {/* Daily Achievement Badge */}
         <div className="w-full max-w-sm">
-          <div className={`rounded-2xl p-5 ${goalReached ? 'bg-mhmr-olive' : 'bg-gray-50 border border-gray-200'}`}>
+          <div className="rounded-2xl p-5 bg-gray-50 border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className={`font-semibold text-base ${goalReached ? 'text-white' : 'text-gray-800'}`}>
-                  Daily Achievement
-                </p>
-                <p className={`text-sm mt-0.5 ${goalReached ? 'text-white/70' : 'text-gray-500'}`}>
+                <p className="font-semibold text-base text-gray-800">Daily Achievement</p>
+                <p className="text-sm mt-0.5 text-gray-500">
                   {todayVideos.length} of {DAILY_GOAL} videos today
                 </p>
               </div>
@@ -70,13 +63,13 @@ export default function HomePage() {
                 {goalReached ? '🏆' : todayVideos.length > 0 ? '📹' : '🎯'}
               </span>
             </div>
-            <div className={`rounded-full h-2.5 ${goalReached ? 'bg-white/20' : 'bg-gray-200'}`}>
+            <div className="rounded-full h-2.5 bg-gray-200">
               <div
-                className={`rounded-full h-2.5 transition-all duration-700 ${goalReached ? 'bg-white' : 'bg-mhmr-olive'}`}
+                className="rounded-full h-2.5 bg-mhmr-olive transition-all duration-700"
                 style={{ width: `${dailyProgress}%` }}
               />
             </div>
-            <p className={`text-xs mt-2 ${goalReached ? 'text-white/70' : 'text-gray-400'}`}>
+            <p className="text-xs mt-2 text-gray-400">
               {goalReached
                 ? "Amazing! You've reached your daily goal!"
                 : `${DAILY_GOAL - todayVideos.length} more video${DAILY_GOAL - todayVideos.length !== 1 ? 's' : ''} to reach your goal`}
