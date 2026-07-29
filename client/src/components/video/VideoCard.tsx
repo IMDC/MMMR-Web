@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Clapperboard, Play, Plus, X, Check } from 'lucide-react';
+import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Clapperboard, Play, Plus, X, Check, Pencil } from 'lucide-react';
 import { Video } from '../../types';
 import { useVideoStore } from '../../store/videoStore';
+import { emotionOptions } from '../../constants/referenceData';
 import { useVideoSetStore } from '../../store/videoSetStore';
 import SentimentBadge from '../common/SentimentBadge';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -15,15 +16,22 @@ interface Props {
   selected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
   inSet?: boolean;
+  readOnly?: boolean;
 }
 
-export default function VideoCard({ video, selectable, selected, onSelect, inSet }: Props) {
+export default function VideoCard({ video, selectable, selected, onSelect, inSet, readOnly }: Props) {
   const navigate = useNavigate();
-  const { deleteVideo } = useVideoStore();
+  const { deleteVideo, updateVideo } = useVideoStore();
   const { videoSets, fetchSets, addVideosToSet, createSet } = useVideoSetStore();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Rename
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Thumbnail ref (for poster frame only)
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
@@ -86,9 +94,51 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
     }
   };
 
+  const startEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTitleDraft(video.title);
+    setEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.select(), 0);
+  };
+
+  const commitTitle = async () => {
+    const trimmed = titleDraft.trim();
+    if (!trimmed || trimmed === video.title) { setEditingTitle(false); return; }
+    setSavingTitle(true);
+    try {
+      await updateVideo(video._id, { title: trimmed });
+    } finally {
+      setSavingTitle(false);
+      setEditingTitle(false);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingTitle(false);
+    setTitleDraft('');
+  };
+
   const parsedKeywords = video.keywords
     .map(k => { try { return JSON.parse(k); } catch { return null; } })
     .filter(Boolean);
+
+  // Emotions
+  const selectedEmotions = video.emotionStickers
+    .map(e => { try { return JSON.parse(e).sentiment as string; } catch { return null; } })
+    .filter(Boolean) as string[];
+  const emotionEmojis = emotionOptions.filter(o => selectedEmotions.includes(o.sentiment));
+
+  // Pain scale
+  const painLevel = video.numericScale ?? 0;
+  const painCategory = painLevel <= 0
+    ? null
+    : painLevel <= 1.5
+    ? { label: 'Mild', style: 'bg-amber-50 text-amber-600' }
+    : painLevel <= 2.5
+    ? { label: 'Moderate', style: 'bg-orange-50 text-orange-600' }
+    : { label: 'Severe', style: 'bg-red-50 text-red-600' };
+
+  const hasMarkups = emotionEmojis.length > 0 || painCategory !== null;
 
   const streamUrl = videosApi.streamUrl(video.filename);
 
@@ -120,15 +170,17 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             playsInline
           />
           {/* Play overlay */}
-          <button
-            onClick={handleOpenPlayer}
-            className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors"
-            aria-label={`Play ${video.title}`}
-          >
-            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-              <Play size={22} className="text-mhmr-olive ml-0.5" fill="currentColor" />
-            </div>
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleOpenPlayer}
+              className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors"
+              aria-label={`Play ${video.title}`}
+            >
+              <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                <Play size={22} className="text-mhmr-olive ml-0.5" fill="currentColor" />
+              </div>
+            </button>
+          )}
           {/* Crisis flag */}
           {video.flagged_for_harm && (
             <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
@@ -140,32 +192,61 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
 
         {/* Title & date */}
         <div className="mb-2">
-          <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2">{video.title}</h3>
+          {editingTitle ? (
+            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+              <input
+                ref={titleInputRef}
+                value={titleDraft}
+                onChange={e => setTitleDraft(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') commitTitle(); if (e.key === 'Escape') cancelEdit(); }}
+                onBlur={commitTitle}
+                className="flex-1 text-sm font-semibold text-gray-800 border-b border-mhmr-olive outline-none bg-transparent min-w-0"
+                autoFocus
+                disabled={savingTitle}
+              />
+              {savingTitle && <Loader2 size={13} className="animate-spin text-mhmr-olive shrink-0" />}
+            </div>
+          ) : (
+            <div className="flex items-start gap-1">
+              <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2 flex-1">{video.title}</h3>
+              {!selectable && !readOnly && (
+                <button
+                  onClick={startEditing}
+                  className="shrink-0 mt-0.5 text-mhmr-olive hover:text-mhmr-olive-dark transition-colors"
+                  aria-label="Rename video"
+                >
+                  <Pencil size={14} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          )}
           <p className="text-xs text-gray-400 mt-0.5">
             {format(new Date(video.datetimeRecorded), 'MMM d, yyyy • h:mm a')}
           </p>
         </div>
 
         {/* Duration & transcription & set status */}
-        <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-          <span className="text-xs text-gray-500">
-            {Math.floor(video.duration / 60)}:{String(Math.floor(video.duration % 60)).padStart(2, '0')}
-          </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-            ${video.isTranscribed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            {video.isTranscribed ? 'Transcribed' : 'Not transcribed'}
-          </span>
-          {inSet !== undefined && (
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-              ${inSet ? 'bg-purple-100 text-purple-700' : 'bg-orange-50 text-orange-600'}`}>
-              {inSet ? 'In a set' : 'Not in a set'}
+        {!readOnly && (
+          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+            <span className="text-xs text-gray-500">
+              {Math.floor(video.duration / 60)}:{String(Math.floor(video.duration % 60)).padStart(2, '0')}
             </span>
-          )}
-          {video.sentiment && <SentimentBadge sentiment={video.sentiment} />}
-        </div>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium
+              ${video.isTranscribed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              {video.isTranscribed ? 'Transcribed' : 'Not transcribed'}
+            </span>
+            {inSet !== undefined && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium
+                ${inSet ? 'bg-purple-100 text-purple-700' : 'bg-orange-50 text-orange-600'}`}>
+                {inSet ? 'In a set' : 'Not in a set'}
+              </span>
+            )}
+            {video.sentiment && <SentimentBadge sentiment={video.sentiment} />}
+          </div>
+        )}
 
         {/* Keywords */}
-        {parsedKeywords.length > 0 && (
+        {!readOnly && parsedKeywords.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {parsedKeywords.slice(0, 3).map((k: any, i: number) => (
               k?.title !== 'None' && (
@@ -175,8 +256,26 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
           </div>
         )}
 
+        {/* Markups: emotions + pain scale */}
+        {!readOnly && hasMarkups && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-3 pt-2 border-t border-gray-100">
+            {emotionEmojis.length > 0 && (
+              <div className="flex items-center gap-1 bg-gray-50 rounded-full px-2 py-0.5">
+                {emotionEmojis.map(({ sentiment, emoji, label }) => (
+                  <span key={sentiment} title={label} className="text-base leading-none">{emoji}</span>
+                ))}
+              </div>
+            )}
+            {painCategory && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${painCategory.style}`}>
+                Pain {painLevel.toFixed(1)} · {painCategory.label}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Actions row */}
-        {!selectable && (
+        {!selectable && !readOnly && (
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             {/* Annotate */}
             <button
