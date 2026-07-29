@@ -8,7 +8,7 @@ const navItems = [
   { to: '/videos', icon: Video, label: 'Manage Videos' },
   { to: '/videosets', icon: Clapperboard, label: 'Video Sets' },
   { to: '/analysis', icon: BarChart2, label: 'Data Analysis' },
-  { to: '/sharing', icon: Share2, label: 'Sharing' },
+  // { to: '/sharing', icon: Share2, label: 'Sharing' },
 ];
 
 export default function Sidebar() {
