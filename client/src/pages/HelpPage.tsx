@@ -26,7 +26,7 @@ const sections = [
         a: 'Open any video from Manage Videos, then tap "Transcribe Video" in the transcript section. Transcription uses AI speech recognition and may take a minute. A progress bar shows each stage.',
       },
       {
-        q: 'What annotations can I add?',
+        q: 'What markups can I add?',
         a: 'Open a video and use the 5 tabs: Keywords (symptom tags), Locations (where you feel symptoms), Emotions (how you feel), Pain Scale (severity), and Comments (free text notes).',
       },
     ] as FaqItem[],
