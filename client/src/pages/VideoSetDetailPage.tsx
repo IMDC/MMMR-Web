@@ -4,7 +4,6 @@ import { ArrowLeft, BarChart2, Plus, Minus, Video, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useVideoSetStore } from '../store/videoSetStore';
 import { useVideoStore } from '../store/videoStore';
-import Header from '../components/layout/Header';
 import VideoCard from '../components/video/VideoCard';
 import SentimentBadge from '../components/common/SentimentBadge';
 import Loader from '../components/common/Loader';
@@ -41,13 +40,6 @@ export default function VideoSetDetailPage() {
   const availableToAdd = videos.filter(v => !set.videoIDs.includes(v._id));
 
   // Dynamic grid columns for available videos based on count
-  const availCount = availableToAdd.length;
-  const availGridCols =
-    availCount <= 2 ? 'grid-cols-2' :
-    availCount <= 6 ? 'grid-cols-3' :
-    availCount <= 12 ? 'grid-cols-4' :
-    'grid-cols-5';
-
   // Dynamic grid columns for videos already in set (normal view)
   const setGridCols =
     setVideos.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' :
@@ -123,14 +115,14 @@ export default function VideoSetDetailPage() {
             )}
           </div>
 
-          {/* Available videos — compact grid fills remaining space */}
+          {/* Available videos — VideoCard style, read-only */}
           <div className="flex-1 min-h-0 overflow-y-auto">
             {availableToAdd.length === 0 ? (
               <p className="text-center text-sm text-gray-400 mt-8">All videos are already in this set</p>
             ) : (
               <>
-                <p className="text-xs text-gray-400 mb-2">Tap a video to add it</p>
-                <div className={`grid ${availGridCols} gap-2`}>
+                <p className="text-xs text-gray-400 mb-3">Tap a video to add it to the set</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {availableToAdd.map(v => (
                     <button
                       key={v._id}
@@ -138,19 +130,9 @@ export default function VideoSetDetailPage() {
                         await addVideosToSet(set._id, [v._id]);
                         await refreshSet(set._id);
                       }}
-                      className="text-left group"
+                      className="text-left hover:ring-2 hover:ring-mhmr-olive rounded-2xl transition-all active:scale-[0.98]"
                     >
-                      <div className="relative rounded-lg overflow-hidden bg-black">
-                        <video
-                          src={videosApi.streamUrl(v.filename)}
-                          className="w-full aspect-video object-cover"
-                          preload="metadata"
-                        />
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Plus size={20} className="text-white drop-shadow" />
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-700 truncate mt-1 font-medium leading-tight">{v.title}</p>
+                      <VideoCard video={v} readOnly />
                     </button>
                   ))}
                 </div>
