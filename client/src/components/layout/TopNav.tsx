@@ -38,6 +38,9 @@ export default function TopNav() {
     navigate('/login', { replace: true });
   };
 
+  const localDisplayName = user ? localStorage.getItem(`mhmr_displayname_${user.id}`) : null;
+  const displayLabel = localDisplayName || user?.displayName || user?.username;
+
   return (
     <nav className="hidden lg:flex items-center h-14 bg-mhmr-olive px-5 gap-1 shrink-0 shadow-sm z-20">
       {/* Logo — left */}
@@ -117,7 +120,7 @@ export default function TopNav() {
             <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               <User size={14} className="text-white" aria-hidden="true" />
             </div>
-            <span className="max-w-[120px] truncate">{user.displayName || user.username}</span>
+            <span className="max-w-[120px] truncate">{displayLabel}</span>
             <ChevronDown size={14} aria-hidden="true" className={`transition-transform duration-200 ${userOpen ? 'rotate-180' : ''}`} />
           </button>
 
@@ -125,7 +128,7 @@ export default function TopNav() {
             <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-xs text-gray-400">Signed in as</p>
-                <p className="text-sm font-semibold text-gray-800 truncate mt-0.5">{user.displayName || user.username}</p>
+                <p className="text-sm font-semibold text-gray-800 truncate mt-0.5">{displayLabel}</p>
                 <p className="text-xs text-gray-400 truncate">{user.username}</p>
               </div>
               <button
