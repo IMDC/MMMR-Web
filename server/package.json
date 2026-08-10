@@ -1,7 +1,7 @@
 {
-  "name": "mhmr-web-server",
+  "name": "mmmr-web-server",
   "version": "1.0.0",
-  "description": "MHMR Web Application - Express/Node.js Backend",
+  "description": "MMMR Web Application - Express/Node.js Backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
