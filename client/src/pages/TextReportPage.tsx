@@ -302,7 +302,10 @@ export default function TextReportPage() {
                 {filteredVideos.map((video, idx) => {
                   const videoSentiment = getVideoSentiment(video);
                   const transcriptOpen = openTranscripts.has(video._id);
-                  const videoBullets = video.tsOutputBullet ? parseBullets(video.tsOutputBullet) : [];
+                  const BRIEF_BULLET = 'Recording was too brief to generate an analysis.';
+                  const BRIEF_SENTENCE = 'This recording did not contain enough speech to generate a summary.';
+                  const isBriefRecording = video.tsOutputBullet === BRIEF_BULLET || video.tsOutputSentence === BRIEF_SENTENCE;
+                  const videoBullets = video.tsOutputBullet && !isBriefRecording ? parseBullets(video.tsOutputBullet) : [];
 
                   return (
                     <div
@@ -341,7 +344,11 @@ export default function TextReportPage() {
                       {/* Video output */}
                       <div className="mb-3">
                         <p className="text-sm font-semibold text-gray-700 mb-1.5">Video output:</p>
-                        {reportFormat === 'bullet' ? (
+                        {isBriefRecording ? (
+                          <p className="text-sm text-gray-400 italic">
+                            Recording was too brief to generate an analysis.
+                          </p>
+                        ) : reportFormat === 'bullet' ? (
                           videoBullets.length > 0 ? (
                             <ul className="space-y-1.5">
                               {videoBullets.map((point, i) => (
