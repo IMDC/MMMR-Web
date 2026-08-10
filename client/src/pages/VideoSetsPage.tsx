@@ -69,11 +69,6 @@ export default function VideoSetsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className="font-semibold text-gray-800 truncate">{set.name}</h3>
-                      {set.isCurrent && (
-                        <span className="text-xs bg-mhmr-olive/10 text-mhmr-olive px-2 py-0.5 rounded-full font-medium shrink-0">
-                          Current
-                        </span>
-                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
