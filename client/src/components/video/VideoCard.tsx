@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Clapperboard, Play, Plus, X, Check, Pencil } from 'lucide-react';
+import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Clapperboard, Play, Plus, X, Check, Pencil, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Video } from '../../types';
 import { useVideoStore } from '../../store/videoStore';
 import { emotionOptions } from '../../constants/referenceData';
 import { useVideoSetStore } from '../../store/videoSetStore';
+import { useAuthStore } from '../../store/authStore';
 import SentimentBadge from '../common/SentimentBadge';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { videosApi } from '../../api/videos';
@@ -23,6 +24,18 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
   const navigate = useNavigate();
   const { deleteVideo, updateVideo } = useVideoStore();
   const { videoSets, fetchSets, addVideosToSet, createSet } = useVideoSetStore();
+  const userId = useAuthStore(s => s.user?.id ?? 'guest');
+  const aiConsentKey = `mhmr_ai_consent_${userId}`;
+  const summaryFormatKey = `mhmr_summary_format_${userId}`;
+
+  const [summaryEnabled, setSummaryEnabled] = useState(
+    () => localStorage.getItem(aiConsentKey) === 'agreed',
+  );
+  const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(
+    () => (localStorage.getItem(summaryFormatKey) as 'sentence' | 'chips' | 'both') || 'both',
+  );
+  const [showSummaryPicker, setShowSummaryPicker] = useState(false);
+  const [pickerFormat, setPickerFormat] = useState<'sentence' | 'chips' | 'both'>('both');
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -129,7 +142,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
   const emotionEmojis = emotionOptions.filter(o => selectedEmotions.includes(o.sentiment));
 
   // Pain scale
-  const painLevel = video.numericScale ?? 0;
+  const painLevel = video.numericPainScale ?? 0;
   const painCategory = painLevel <= 0
     ? null
     : painLevel <= 1.5
@@ -224,6 +237,53 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             {format(new Date(video.datetimeRecorded), 'MMM d, yyyy • h:mm a')}
           </p>
         </div>
+
+        {/* AI Summary */}
+        {summaryEnabled && (video.videoSummary || video.videoTopics?.length > 0) && (
+          readOnly ? (
+            <div className="mb-3 px-2 py-1.5">
+              <div className="flex items-center gap-1 mb-1">
+                <Sparkles size={10} className="text-gray-400" aria-hidden="true" />
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">AI Summary</span>
+              </div>
+              {(summaryFormat === 'sentence' || summaryFormat === 'both') && video.videoSummary && (
+                <p className="text-xs text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
+              )}
+              {(summaryFormat === 'chips' || summaryFormat === 'both') && video.videoTopics?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {video.videoTopics.map((topic, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-gray-50">{topic}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); setPickerFormat(summaryFormat); setShowSummaryPicker(true); }}
+              aria-label="Customize AI summary display format"
+              className="w-full text-left mb-3 px-2 py-1.5 rounded-xl border border-transparent hover:border-mhmr-olive/30 hover:bg-mhmr-olive/5 transition-colors group/summary"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <Sparkles size={10} className="text-gray-400" aria-hidden="true" />
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">AI Summary</span>
+                </div>
+                <SlidersHorizontal size={11} className="text-gray-300 group-hover/summary:text-mhmr-olive transition-colors" aria-hidden="true" />
+              </div>
+              {(summaryFormat === 'sentence' || summaryFormat === 'both') && video.videoSummary && (
+                <p className="text-xs text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
+              )}
+              {(summaryFormat === 'chips' || summaryFormat === 'both') && video.videoTopics?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {video.videoTopics.map((topic, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-gray-50">{topic}</span>
+                  ))}
+                </div>
+              )}
+            </button>
+          )
+        )}
 
         {/* Duration & transcription & set status */}
         {!readOnly && (
@@ -359,6 +419,97 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
           onCancel={() => setShowDeleteConfirm(false)}
           danger
         />
+      )}
+
+      {/* Summary Format Picker modal */}
+      {showSummaryPicker && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          role="presentation"
+          onClick={() => setShowSummaryPicker(false)}
+          onKeyDown={e => e.key === 'Escape' && setShowSummaryPicker(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="summary-picker-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 id="summary-picker-title" className="font-bold text-gray-800">AI Summary Display</h2>
+              <button onClick={() => setShowSummaryPicker(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3">
+              <p className="text-xs text-gray-500">Choose how AI summaries appear on video cards:</p>
+
+              {(['sentence', 'chips', 'both'] as const).map(fmt => (
+                <button
+                  key={fmt}
+                  onClick={() => setPickerFormat(fmt)}
+                  className={`w-full text-left p-3 rounded-xl border-2 transition-colors ${
+                    pickerFormat === fmt ? 'border-mhmr-olive bg-mhmr-olive/5' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  aria-pressed={pickerFormat === fmt}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-800">
+                      {fmt === 'sentence' ? 'Sentence' : fmt === 'chips' ? 'Keywords' : 'Both'}
+                    </span>
+                    {pickerFormat === fmt && <Check size={14} className="text-mhmr-olive" aria-hidden="true" />}
+                  </div>
+                  {/* Mini preview */}
+                  <div className="bg-gray-50 rounded-lg p-2 border border-gray-100">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Sparkles size={8} className="text-gray-400" aria-hidden="true" />
+                      <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">AI Summary</span>
+                    </div>
+                    {(fmt === 'sentence' || fmt === 'both') && (
+                      <p className="text-[11px] text-gray-500 italic mb-1 leading-relaxed">
+                        Discussed lower back pain after exercise, poor sleep, and low energy.
+                      </p>
+                    )}
+                    {(fmt === 'chips' || fmt === 'both') && (
+                      <div className="flex flex-wrap gap-1">
+                        {['back pain', 'sleep', 'fatigue'].map(t => (
+                          <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-white">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  onClick={() => {
+                    localStorage.setItem(aiConsentKey, 'disagreed');
+                    setSummaryEnabled(false);
+                    setShowSummaryPicker(false);
+                  }}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline"
+                >
+                  Turn off AI summaries
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem(summaryFormatKey, pickerFormat);
+                    setSummaryFormat(pickerFormat);
+                    setShowSummaryPicker(false);
+                  }}
+                  className="btn-primary text-sm px-4 py-1.5"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Add to Set modal */}

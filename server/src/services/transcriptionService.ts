@@ -7,6 +7,7 @@ import { userUploadDir } from '../utils/userPaths';
 import { extractAudio, cleanupAudio } from './ffmpegService';
 import { detectCrisisContent, CrisisDetectionResult } from './crisisService';
 import { processTranscriptToFrequency, FrequencyMap } from './frequencyService';
+import { generateVideoSummary } from './chatgptService';
 
 export type TranscriptionStage =
   | 'audio_extraction_start'
@@ -24,6 +25,8 @@ export interface TranscriptionResult {
   transcript: string;
   crisisResult: CrisisDetectionResult;
   frequencyData: FrequencyMap;
+  videoSummary?: string;
+  videoTopics?: string[];
 }
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB Whisper limit
@@ -91,9 +94,18 @@ export async function transcribeVideo(
     emit('frequency_analysis', 80, 'Analyzing word frequencies...');
     const frequencyData = processTranscriptToFrequency(transcript, 1);
 
+    // Step 5: Quick AI summary (lightweight, non-blocking if it fails)
+    const summaryResult = await generateVideoSummary(transcript).catch(() => null);
+
     emit('complete', 100, 'Processing complete');
 
-    return { transcript, crisisResult, frequencyData };
+    return {
+      transcript,
+      crisisResult,
+      frequencyData,
+      videoSummary: summaryResult?.sentence,
+      videoTopics: summaryResult?.topics,
+    };
   } finally {
     // Always clean up audio file
     if (mp3Filename) {
