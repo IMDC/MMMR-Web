@@ -12,11 +12,11 @@ const severityColors: Record<string, string> = {
 
 interface Props {
   value: string[];     // JSON-encoded PainScaleItem[]
-  numericScale: number;
-  onChange: (value: string[], numericScale: number) => void;
+  numericPainScale: number;
+  onChange: (value: string[], numericPainScale: number) => void;
 }
 
-export default function PainScalePicker({ value, numericScale, onChange }: Props) {
+export default function PainScalePicker({ value, numericPainScale, onChange }: Props) {
   const [items, setItems] = useState<PainScaleItem[]>(() => {
     const parsedAll: PainScaleItem[] = value.map(v => { try { return JSON.parse(v); } catch { return null; } }).filter(Boolean);
     const parsedMap: Record<string, string> = {};
@@ -27,7 +27,7 @@ export default function PainScalePicker({ value, numericScale, onChange }: Props
     return [...predefined, ...custom];
   });
 
-  const [scale, setScale] = useState(numericScale);
+  const [scale, setScale] = useState(numericPainScale);
   const [customInput, setCustomInput] = useState('');
 
   const cycleSeverity = (id: string) => {

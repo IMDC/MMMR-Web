@@ -28,9 +28,8 @@ export async function getVideoSet(req: Request, res: Response) {
 
 export async function updateVideoSet(req: Request, res: Response) {
   const allowed = [
-    'name', 'isCurrent', 'reportFormat', 'selectedWords', 'aiOptedIn',
+    'name', 'reportFormat', 'aiOptedIn',
     'summaryAnalysisBullet', 'summaryAnalysisSentence', 'isSummaryGenerated',
-    'combinedFrequencyData', 'isFrequencyAnalyzed',
   ];
   const updates: Record<string, any> = {};
   for (const key of allowed) {
@@ -72,14 +71,6 @@ export async function addVideosToSet(req: Request, res: Response) {
     { new: true },
   );
   if (!set) return res.status(404).json({ error: 'Video set not found' });
-
-  // Update date range
-  const videos = await VideoData.find({ _id: { $in: set.videoIDs } }).sort({ datetimeRecorded: 1 });
-  if (videos.length > 0) {
-    set.earliestVideoDateTime = videos[0].datetimeRecorded;
-    set.latestVideoDateTime = videos[videos.length - 1].datetimeRecorded;
-    await set.save();
-  }
 
   res.json(set);
 }

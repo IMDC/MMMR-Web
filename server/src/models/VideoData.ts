@@ -10,22 +10,20 @@ export interface IVideoData extends Omit<Document, 'isSelected'> {
   locations: string[];       // JSON-encoded ReferenceItem[]
   emotionStickers: string[]; // JSON-encoded { sentiment, timestamp }[]
   keywords: string[];        // JSON-encoded ReferenceItem[]
-  painScale: string[];       // JSON-encoded PainScaleItem[]
-  numericScale: number;
+  painKeyword: string[];     // JSON-encoded PainScaleItem[]
+  numericPainScale: number;
   isTranscribed: boolean;
-  isSelected: boolean;
   transcript: string;
-  weekday: string;
   sentiment: string;
   biasAdjustedSentiment: string;
-  sentimentScore: number;
-  averageConfidence: number;
   tsOutputBullet: string;
   tsOutputSentence: string;
   bulletSentiments: string;  // JSON string
   flagged_for_harm: boolean;
   frequencyData: string;     // JSON string FrequencyMap
   bulletPointsLocked: boolean;
+  videoSummary: string;
+  videoTopics: string[];
 }
 
 const VideoDataSchema = new Schema<IVideoData>(
@@ -39,22 +37,20 @@ const VideoDataSchema = new Schema<IVideoData>(
     locations: { type: [String], default: [] },
     emotionStickers: { type: [String], default: [] },
     keywords: { type: [String], default: [] },
-    painScale: { type: [String], default: [] },
-    numericScale: { type: Number, default: 0 },
+    painKeyword: { type: [String], default: [] },
+    numericPainScale: { type: Number, default: 0 },
     isTranscribed: { type: Boolean, default: false },
-    isSelected: { type: Boolean, default: false },
     transcript: { type: String, default: '' },
-    weekday: { type: String, default: () => new Date().toString().split(' ')[0] },
     sentiment: { type: String, default: '' },
     biasAdjustedSentiment: { type: String, default: '' },
-    sentimentScore: { type: Number, default: 0 },
-    averageConfidence: { type: Number, default: 0 },
     tsOutputBullet: { type: String, default: '' },
     tsOutputSentence: { type: String, default: '' },
     bulletSentiments: { type: String, default: '' },
     flagged_for_harm: { type: Boolean, default: false },
     frequencyData: { type: String, default: '' },
     bulletPointsLocked: { type: Boolean, default: false },
+    videoSummary: { type: String, default: '' },
+    videoTopics: { type: [String], default: [] },
   },
   { timestamps: true }
 );

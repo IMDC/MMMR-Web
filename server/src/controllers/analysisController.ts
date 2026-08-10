@@ -29,15 +29,13 @@ export async function analyzeVideo(req: Request, res: Response) {
     const result = await analyze(
       video.transcript,
       Array.from(video.emotionStickers || []),
-      video.numericScale,
+      video.numericPainScale,
       Array.from(video.textComments || []),
     );
 
     await VideoData.findByIdAndUpdate(videoId, {
       sentiment: result.weightedSentiment.overallSentiment,
       biasAdjustedSentiment: result.weightedSentiment.overallSentiment,
-      sentimentScore: result.weightedSentiment.averageScore,
-      averageConfidence: result.weightedSentiment.averageConfidence,
       bulletSentiments: JSON.stringify(result.weightedSentiment.bulletSentiments),
     });
 
@@ -47,7 +45,7 @@ export async function analyzeVideo(req: Request, res: Response) {
   const result = await analyzeVideoTranscript(
     video.transcript,
     Array.from(video.emotionStickers || []),
-    video.numericScale,
+    video.numericPainScale,
     Array.from(video.textComments || []),
   );
 
@@ -57,8 +55,6 @@ export async function analyzeVideo(req: Request, res: Response) {
     tsOutputSentence: result.tsOutputSentence,
     sentiment: result.weightedSentiment.overallSentiment,
     biasAdjustedSentiment: result.weightedSentiment.overallSentiment,
-    sentimentScore: result.weightedSentiment.averageScore,
-    averageConfidence: result.weightedSentiment.averageConfidence,
     bulletSentiments: JSON.stringify(result.weightedSentiment.bulletSentiments),
     bulletPointsLocked: true,
     isTranscribed: true,
@@ -68,7 +64,6 @@ export async function analyzeVideo(req: Request, res: Response) {
     tsOutputBullet: result.tsOutputBullet,
     tsOutputSentence: result.tsOutputSentence,
     sentiment: result.weightedSentiment.overallSentiment,
-    sentimentScore: result.weightedSentiment.averageScore,
     bulletSentiments: result.weightedSentiment.bulletSentiments,
     conflictDetected: result.weightedSentiment.conflictDetected,
     userSentiment: result.weightedSentiment.userSentiment,
@@ -92,7 +87,7 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
     const perVideo = await analyzeVideoTranscript(
       video.transcript,
       Array.from(video.emotionStickers || []),
-      video.numericScale,
+      video.numericPainScale,
       Array.from(video.textComments || []),
     );
     await VideoData.findByIdAndUpdate(video._id, {
@@ -100,8 +95,6 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
       tsOutputSentence: perVideo.tsOutputSentence,
       sentiment: perVideo.weightedSentiment.overallSentiment,
       biasAdjustedSentiment: perVideo.weightedSentiment.overallSentiment,
-      sentimentScore: perVideo.weightedSentiment.averageScore,
-      averageConfidence: perVideo.weightedSentiment.averageConfidence,
       bulletSentiments: JSON.stringify(perVideo.weightedSentiment.bulletSentiments),
       bulletPointsLocked: true,
     });
@@ -120,8 +113,6 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
     summaryAnalysisSentence: result.summaryAnalysisSentence,
     isSummaryGenerated: true,
     sentiment: result.weightedSentiment.overallSentiment,
-    sentimentScore: result.weightedSentiment.averageScore,
-    averageConfidence: result.weightedSentiment.averageConfidence,
     bulletSentiments: JSON.stringify(result.weightedSentiment.bulletSentiments),
   });
 
