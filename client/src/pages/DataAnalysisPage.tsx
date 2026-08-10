@@ -6,7 +6,6 @@ import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
 import Header from '../components/layout/Header';
-import SentimentBadge from '../components/common/SentimentBadge';
 
 const analysisCards = [
   {
@@ -46,16 +45,12 @@ export default function DataAnalysisPage() {
   const { videos, fetchVideos } = useVideoStore();
   const { analyzeVideoSet, clearCache } = useAnalysisStore();
   const userId = useAuthStore(s => s.user?.id ?? 'guest');
-  const aiPrefKey = `mhmr_ai_reports_${userId}`;
+  const aiConsentKey = `mhmr_ai_consent_${userId}`;
   const [selectedSetId, setSelectedSetId] = useState(searchParams.get('setId') || '');
 
-  // Global AI preference (persisted)
-  const [aiGlobalEnabled, setAiGlobalEnabled] = useState(
-    () => localStorage.getItem(`mhmr_ai_reports_${userId}`) === 'true'
-  );
+  const aiGlobalEnabled = localStorage.getItem(aiConsentKey) === 'agreed';
 
   // Modal states
-  const [showToggleConfirm, setShowToggleConfirm] = useState(false);
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -72,22 +67,6 @@ export default function DataAnalysisPage() {
   const selectedSet = videoSets.find(s => s._id === selectedSetId);
   const setVideos = videos.filter(v => selectedSet?.videoIDs.includes(v._id));
   const transcribedCount = setVideos.filter(v => v.isTranscribed).length;
-
-  // ── Toggle handlers ──────────────────────────────────────────────
-  const handleToggle = () => {
-    if (aiGlobalEnabled) {
-      setAiGlobalEnabled(false);
-      localStorage.setItem(aiPrefKey, 'false');
-    } else {
-      setShowToggleConfirm(true);
-    }
-  };
-
-  const confirmEnableGlobal = () => {
-    setAiGlobalEnabled(true);
-    localStorage.setItem(aiPrefKey, 'true');
-    setShowToggleConfirm(false);
-  };
 
   // ── Analysis runner ───────────────────────────────────────────────
   const runAnalysisAndNavigate = async () => {
@@ -129,8 +108,7 @@ export default function DataAnalysisPage() {
   };
 
   const handleConsentYesForAll = async () => {
-    setAiGlobalEnabled(true);
-    localStorage.setItem(aiPrefKey, 'true');
+    localStorage.setItem(aiConsentKey, 'agreed');
     setShowConsentModal(false);
     await runAnalysisAndNavigate();
   };
@@ -168,35 +146,6 @@ export default function DataAnalysisPage() {
           )}
         </div>
 
-        {/* Global AI toggle */}
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-800 text-sm">AI Text Reports</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {aiGlobalEnabled
-                  ? 'AI reports are enabled — clicking Text Report will generate automatically'
-                  : 'AI reports are off — you\'ll be asked each time you open a Text Report'}
-              </p>
-            </div>
-            <button
-              role="switch"
-              aria-checked={aiGlobalEnabled}
-              aria-label="Enable AI Text Reports globally"
-              onClick={handleToggle}
-              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${aiGlobalEnabled ? 'bg-mhmr-olive' : 'bg-gray-300'}`}
-            >
-              <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${aiGlobalEnabled ? 'translate-x-6' : ''}`} aria-hidden="true" />
-            </button>
-          </div>
-          {selectedSet?.isSummaryGenerated && selectedSet.sentiment && (
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-xs text-gray-500">Last report sentiment:</span>
-              <SentimentBadge sentiment={selectedSet.sentiment} />
-            </div>
-          )}
-        </div>
-
         {/* Analysis cards */}
         {selectedSetId && (
           <div className="grid grid-cols-2 gap-3">
@@ -226,43 +175,6 @@ export default function DataAnalysisPage() {
           </div>
         )}
       </div>
-
-      {/* ── Toggle-on confirmation modal ── */}
-      {showToggleConfirm && (
-        <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          role="presentation"
-          onClick={() => setShowToggleConfirm(false)}
-          onKeyDown={e => e.key === 'Escape' && setShowToggleConfirm(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="toggle-confirm-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 id="toggle-confirm-title" className="font-bold text-gray-800 mb-2">Enable AI Text Reports?</h2>
-            <p className="text-sm text-gray-600 mb-5">
-              When enabled, new video sets will automatically use AI-generated text reports without asking each time.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowToggleConfirm(false)}
-                className="flex-1 btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmEnableGlobal}
-                className="flex-1 btn-primary"
-              >
-                Enable
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Per-set AI consent modal ── */}
       {showConsentModal && (

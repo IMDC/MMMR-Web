@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Zap, ZapOff, FileText } from 'lucide-react';
+import { Zap, ZapOff, Sparkles, Check } from 'lucide-react';
 import Header from '../components/layout/Header';
 import { useAuthStore } from '../store/authStore';
 
 export default function SettingsPage() {
   const userId = useAuthStore(s => s.user?.id ?? 'guest');
   const autotranscribeKey = `mhmr_autotranscribe_${userId}`;
-  const aiPrefKey = `mhmr_ai_reports_${userId}`;
+  const aiConsentKey = `mhmr_ai_consent_${userId}`;
+  const summaryFormatKey = `mhmr_summary_format_${userId}`;
 
   const [autoTranscribe, setAutoTranscribe] = useState<boolean | null>(() => {
     const pref = localStorage.getItem(autotranscribeKey);
@@ -14,10 +15,14 @@ export default function SettingsPage() {
     return pref === 'true';
   });
 
-  const [aiReports, setAiReports] = useState(
-    () => localStorage.getItem(aiPrefKey) === 'true'
+  const [aiEnabled, setAiEnabled] = useState(
+    () => localStorage.getItem(aiConsentKey) === 'agreed'
   );
   const [showAiConfirm, setShowAiConfirm] = useState(false);
+
+  const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(
+    () => (localStorage.getItem(summaryFormatKey) as 'sentence' | 'chips' | 'both') || 'both',
+  );
 
   const toggle = (enabled: boolean) => {
     localStorage.setItem(autotranscribeKey, String(enabled));
@@ -25,17 +30,17 @@ export default function SettingsPage() {
   };
 
   const handleAiToggle = () => {
-    if (aiReports) {
-      localStorage.setItem(aiPrefKey, 'false');
-      setAiReports(false);
+    if (aiEnabled) {
+      localStorage.setItem(aiConsentKey, 'disagreed');
+      setAiEnabled(false);
     } else {
       setShowAiConfirm(true);
     }
   };
 
   const confirmAiEnable = () => {
-    localStorage.setItem(aiPrefKey, 'true');
-    setAiReports(true);
+    localStorage.setItem(aiConsentKey, 'agreed');
+    setAiEnabled(true);
     setShowAiConfirm(false);
   };
 
@@ -102,42 +107,69 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {/* AI Text Reports */}
+        {/* AI Features */}
         <div className="card">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-orange-50 text-orange-600">
-              <FileText size={18} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600">
+              <Sparkles size={18} />
             </div>
-            <h2 className="font-semibold text-gray-800">AI Text Reports</h2>
+            <h2 className="font-semibold text-gray-800">AI Features</h2>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-sm text-gray-800 font-medium">
-                {aiReports ? 'Enabled' : 'Disabled'}
-              </p>
+              <p className="text-sm text-gray-800 font-medium">{aiEnabled ? 'Enabled' : 'Disabled'}</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {aiReports
-                  ? 'Text reports generate automatically without asking each time'
-                  : "You'll be asked each time you open a Text Report"}
+                {aiEnabled
+                  ? 'AI summaries on cards · Text reports auto-generate'
+                  : "AI summaries hidden · You'll be asked before each report"}
               </p>
             </div>
             <button
               role="switch"
-              aria-checked={aiReports}
-              aria-label="Enable AI Text Reports"
+              aria-checked={aiEnabled}
+              aria-label="Enable AI features"
               onClick={handleAiToggle}
-              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${aiReports ? 'bg-mhmr-olive' : 'bg-gray-300'}`}
+              className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${aiEnabled ? 'bg-mhmr-olive' : 'bg-gray-300'}`}
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${aiReports ? 'translate-x-6' : ''}`}
+                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${aiEnabled ? 'translate-x-6' : ''}`}
                 aria-hidden="true"
               />
             </button>
           </div>
 
+          {aiEnabled && (
+            <div className="border-t border-gray-100 pt-3">
+              <p className="text-xs text-gray-500 mb-2">Video card summary format:</p>
+              <div className="flex flex-col gap-2">
+                {([['sentence', 'Sentence only', 'A concise one-liner describing the video'],
+                   ['chips', 'Keywords only', '3–5 short topic tags'],
+                   ['both', 'Both', 'Sentence + keyword chips']] as const).map(([fmt, label, desc]) => (
+                  <button
+                    key={fmt}
+                    onClick={() => {
+                      localStorage.setItem(summaryFormatKey, fmt);
+                      setSummaryFormat(fmt);
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-xl border-2 transition-colors text-left ${
+                      summaryFormat === fmt ? 'border-mhmr-olive bg-mhmr-olive/5' : 'border-gray-100 hover:border-gray-300'
+                    }`}
+                    aria-pressed={summaryFormat === fmt}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{label}</p>
+                      <p className="text-xs text-gray-400">{desc}</p>
+                    </div>
+                    {summaryFormat === fmt && <Check size={14} className="text-mhmr-olive shrink-0" aria-hidden="true" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-            When enabled, AI reports send your video transcripts to an external AI service (ChatGPT) to generate summaries and sentiment analysis.
+            When enabled, transcript text is sent to OpenAI GPT-4 to generate summaries and analyses.
           </p>
         </div>
       </div>
@@ -157,9 +189,9 @@ export default function SettingsPage() {
             className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
             onClick={e => e.stopPropagation()}
           >
-            <h2 id="ai-confirm-title" className="font-bold text-gray-800 mb-2">Enable AI Text Reports?</h2>
+            <h2 id="ai-confirm-title" className="font-bold text-gray-800 mb-2">Enable AI Features?</h2>
             <p className="text-sm text-gray-600 mb-5">
-              When enabled, new video sets will automatically use AI-generated text reports without asking each time.
+              When enabled, transcript text is sent to OpenAI GPT-4 to generate summaries on video cards and auto-generate text reports.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowAiConfirm(false)} className="flex-1 btn-secondary">
