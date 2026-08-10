@@ -54,7 +54,6 @@ export async function uploadVideo(req: Request, res: Response) {
     filename,
     duration,
     datetimeRecorded: new Date(),
-    weekday: new Date().toString().split(' ')[0],
   });
 
   res.status(201).json(video);
@@ -62,8 +61,8 @@ export async function uploadVideo(req: Request, res: Response) {
 
 export async function updateVideo(req: Request, res: Response) {
   const allowed = [
-    'title', 'keywords', 'locations', 'emotionStickers', 'painScale',
-    'numericScale', 'textComments', 'isSelected', 'bulletPointsLocked',
+    'title', 'keywords', 'locations', 'emotionStickers', 'painKeyword',
+    'numericPainScale', 'textComments', 'bulletPointsLocked',
   ];
   const updates: Record<string, any> = {};
   for (const key of allowed) {
@@ -136,6 +135,8 @@ export async function transcribeVideoById(req: Request, res: Response) {
       isTranscribed: true,
       flagged_for_harm: result.crisisResult.flagged,
       frequencyData: JSON.stringify(result.frequencyData),
+      ...(result.videoSummary ? { videoSummary: result.videoSummary } : {}),
+      ...(result.videoTopics?.length ? { videoTopics: result.videoTopics } : {}),
     });
 
     res.json({
@@ -172,6 +173,8 @@ export async function transcriptionStatus(req: Request, res: Response) {
       isTranscribed: true,
       flagged_for_harm: result.crisisResult.flagged,
       frequencyData: JSON.stringify(result.frequencyData),
+      ...(result.videoSummary ? { videoSummary: result.videoSummary } : {}),
+      ...(result.videoTopics?.length ? { videoTopics: result.videoTopics } : {}),
     });
 
     res.write(`data: ${JSON.stringify({

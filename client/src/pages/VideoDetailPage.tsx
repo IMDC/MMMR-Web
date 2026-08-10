@@ -218,9 +218,9 @@ export default function VideoDetailPage() {
             )}
             {activeTab === 'pain' && (
               <PainScalePicker
-                value={video.painScale}
-                numericScale={video.numericScale}
-                onChange={(painScale, numericScale) => saveAnnotations({ painScale, numericScale })}
+                value={video.painKeyword}
+                numericPainScale={video.numericPainScale}
+                onChange={(painKeyword, numericPainScale) => saveAnnotations({ painKeyword, numericPainScale })}
               />
             )}
             {activeTab === 'comments' && (
