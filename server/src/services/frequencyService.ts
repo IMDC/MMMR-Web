@@ -1,5 +1,6 @@
 // Frequency calculation service — ported from mobile frequencyCalculation.ts and ngramExtractor.tsx
 // Runs server-side so the client never needs the heavy computation
+import { PorterStemmer } from 'natural';
 
 export interface FrequencyMap {
   [key: string]: number;
@@ -140,14 +141,31 @@ function extractMedicalPhrases(text: string): { phrase: string; intensity?: stri
 export function processTranscriptToFrequency(transcript: string, minCount = 1): FrequencyMap {
   if (!transcript || transcript.trim() === '') return {};
 
-  const freq: FrequencyMap = {};
+  // stem → total count
+  const stemCounts: Record<string, number> = {};
+  // stem → { original word → how many times that original appeared }
+  const stemOriginals: Record<string, Record<string, number>> = {};
+
   const words = transcript.toLowerCase().replace(/[^a-z0-9\s'-]/g, '').split(/\s+/);
 
-  // Basic word frequency
+  // Basic word frequency — grouped by stem
   for (const word of words) {
     const cleaned = word.replace(/^['-]+|['-]+$/g, '');
     if (!cleaned || cleaned.length < 2 || STOP_WORDS.has(cleaned)) continue;
-    freq[cleaned] = (freq[cleaned] || 0) + 1;
+
+    const stem = PorterStemmer.stem(cleaned);
+    stemCounts[stem] = (stemCounts[stem] || 0) + 1;
+    if (!stemOriginals[stem]) stemOriginals[stem] = {};
+    stemOriginals[stem][cleaned] = (stemOriginals[stem][cleaned] || 0) + 1;
+  }
+
+  // Use the most-frequently occurring original word as the display key for each stem group
+  // e.g. "pain"×3 + "painful"×1 → key "pain" with count 4
+  const freq: FrequencyMap = {};
+  for (const [stem, count] of Object.entries(stemCounts)) {
+    const displayWord = Object.entries(stemOriginals[stem])
+      .sort((a, b) => b[1] - a[1])[0][0];
+    freq[displayWord] = (freq[displayWord] || 0) + count;
   }
 
   // Medical n-gram phrases
