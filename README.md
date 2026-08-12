@@ -70,6 +70,18 @@ mkdir -p server/uploads/videos
 
 ---
 
+## After pulling updates
+
+If `package.json` changed (new dependencies were added), re-run:
+
+```bash
+cd server && npm install && cd ../client && npm install && cd ..
+```
+
+Then restart the app normally. You can tell if this is needed by checking whether `package-lock.json` was in the list of changed files after your `git pull`.
+
+---
+
 ## Running the App
 
 From the root directory:
