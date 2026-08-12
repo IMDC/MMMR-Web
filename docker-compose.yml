@@ -1,0 +1,36 @@
+services:
+  frontend:
+    build: ./client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      PORT: "5001"
+      MONGODB_URI: "mongodb://mongodb:27017/mhmr"
+      NODE_ENV: "production"
+      SESSION_SECRET: "${SESSION_SECRET}"
+      API_OPENAI_CHATGPT: "${API_OPENAI_CHATGPT}"
+      API_KEY_SPEECH_TO_TEXT: "${API_KEY_SPEECH_TO_TEXT}"
+      CORS_ORIGIN: "${CORS_ORIGIN}"
+      UPLOADS_DIR: "/app/uploads/videos"
+      SECURE_COOKIES: "false"
+    volumes:
+      - video_uploads:/app/uploads/videos
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  video_uploads:
+  mongo_data:
