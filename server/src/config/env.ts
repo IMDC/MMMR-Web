@@ -20,4 +20,6 @@ export const config = {
     : path.resolve(SERVER_ROOT, uploadsEnv),
   maxFileSizeMb: parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  secureCookies: process.env.SECURE_COOKIES === 'true',
 };

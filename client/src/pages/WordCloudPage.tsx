@@ -134,7 +134,7 @@ export default function WordCloudPage() {
       drawOutOfBound: false,
       shrinkToFit: true,    // auto-shrinks fonts until everything fits
       origin: [canvasSize.w / 2, canvasSize.h / 2], // largest word centered
-      hover: (item: [string, number] | null, _dim: unknown, event: MouseEvent) => {
+      hover: (item: any, _dim: unknown, event: MouseEvent) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         if (item) {
@@ -154,7 +154,7 @@ export default function WordCloudPage() {
           canvas.style.cursor = 'default';
         }
       },
-      click: (item: [string, number]) => {
+      click: (item: any) => {
         setSelectedWord(item[0]);
         navigate(`/analysis/${setId}/line`);
       },

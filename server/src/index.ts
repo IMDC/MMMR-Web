@@ -20,7 +20,7 @@ const app = express();
 
 // Security & logging middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -36,7 +36,7 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // set true behind HTTPS in production
+      secure: config.secureCookies,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     },
   }),
