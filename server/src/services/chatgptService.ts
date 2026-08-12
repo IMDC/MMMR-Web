@@ -10,7 +10,7 @@ import {
   getPainBias,
 } from './sentimentService';
 
-async function callChatGPT(prompt: string, jsonMode = false): Promise<string | null> {
+async function callChatGPT(prompt: string, jsonMode = false, temperature = 0.2): Promise<string | null> {
   if (!config.openAiKey) {
     console.error('OpenAI API key not configured');
     return null;
@@ -33,6 +33,7 @@ async function callChatGPT(prompt: string, jsonMode = false): Promise<string | n
           { role: 'user', content: prompt },
         ],
         max_tokens: 400,
+        temperature,
         ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
       }),
     });
@@ -52,21 +53,25 @@ async function callChatGPT(prompt: string, jsonMode = false): Promise<string | n
 }
 
 // Minimum words needed before we consider content meaningful enough for GPT analysis.
-// Below this threshold the model is forced to produce bullets from essentially nothing,
-// which causes hallucination. floor(29/60) = 0, so the "3 bullet minimum" is 100% invented.
-const MIN_WORDS_FOR_ANALYSIS = 30;
+const MIN_WORDS_FOR_ANALYSIS = 3;
 
 const BRIEF_BULLET = 'Recording was too brief to generate an analysis.';
 const BRIEF_SENTENCE = 'This recording did not contain enough speech to generate a summary.';
 
-function getOptimalBulletPoints(wordCount: number): number {
-  return Math.min(7, Math.max(3, Math.floor(wordCount / 60)));
-}
-
-function normalizeBullets(text: string): string[] {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  // Strip any leading bullet/dash/number prefix GPT might add, regardless of Unicode variant
-  return lines.map(l => l.replace(/^[\u2022\u2023\u2043\u25E6\u2014\u2013\-\*\d]+[.):]?\s*/, '').trim()).filter(Boolean);
+// Parse the JSON bullet response from GPT. Returns 0–7 plain-text bullet strings.
+// Falls back to [] on any parse failure so downstream code always gets a clean array.
+function parseBulletJson(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.bullets)) return [];
+    return (parsed.bullets as unknown[])
+      .filter((b): b is string => typeof b === 'string' && b.trim().length > 0)
+      .map(b => b.trim())
+      .slice(0, 7);
+  } catch {
+    return [];
+  }
 }
 
 async function getAllBulletSentiments(
@@ -91,7 +96,7 @@ Guidelines:
 ${points.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 </bullets>`;
 
-  const response = await callChatGPT(prompt, true);
+  const response = await callChatGPT(prompt, true, 0.1);
   if (!response) return points.map(() => ({ sentiment: 'Neutral' as SentimentType, confidence: 50 }));
 
   try {
@@ -136,7 +141,6 @@ export async function analyzeVideoTranscript(
     };
   }
 
-  const optimalBullets = getOptimalBulletPoints(wordCount);
   const painSentiment = getPainSentiment(numericPainScale);
 
   const commentsSection = textComments.length > 0
@@ -145,8 +149,17 @@ export async function analyzeVideoTranscript(
       }).filter(Boolean).join('\n')}\n</text_comments>`
     : '';
 
-  const bulletPrompt = `Provide exactly ${optimalBullets} bullet points of the main topics in the health video transcript below.
-PRIORITIZE wellbeing content: physical health, sleep, mood, energy, daily functioning.
+  const bulletPrompt = `Analyze the health journal transcript below and return a JSON object with a single key "bullets" containing an array of strings.
+
+Rules:
+- 0 to 7 bullets allowed; 0 is valid
+- Each bullet is one distinct, meaningful health observation
+- Only include content about: physical health, pain, sleep, mood, energy, or daily activity
+- Combine closely related points into one bullet
+- Omit bullets for content not related to health or wellbeing
+- Do not fabricate or repeat information
+
+Return format: { "bullets": ["...", "..."] }
 
 <transcript>
 ${transcript}
@@ -160,12 +173,11 @@ ${transcript}
 
   // Run bullet and sentence summaries in parallel
   const [rawBullet, sentence] = await Promise.all([
-    callChatGPT(bulletPrompt),
-    callChatGPT(sentencePrompt),
+    callChatGPT(bulletPrompt, true, 0.2),
+    callChatGPT(sentencePrompt, false, 0.3),
   ]);
 
-  const bulletText = rawBullet || '';
-  const bulletPoints = normalizeBullets(bulletText);
+  const bulletPoints = parseBulletJson(rawBullet);
 
   // Get all bullet sentiments in a single batched API call
   const sentiments = await getAllBulletSentiments(bulletPoints);
@@ -214,12 +226,16 @@ export async function analyzeVideoSet(
     };
   }
 
-  const combined = nonEmpty.join(' ');
-  const wordCount = combined.split(' ').length;
-  const optimalBullets = getOptimalBulletPoints(wordCount);
+  const bulletPrompt = `Analyze the health journal transcripts below and return a JSON object with a single key "bullets" containing an array of strings.
 
-  const bulletPrompt = `Summarize the following health video transcripts into exactly ${optimalBullets} high-impact bullet points.
-Use a standard markdown list format.
+Rules:
+- 0 to 7 bullets allowed; 0 is valid
+- Each bullet is one distinct, meaningful health observation across all videos
+- Only include content about: physical health, pain, sleep, mood, energy, or daily activity
+- Combine closely related points into one bullet
+- Do not fabricate or repeat information
+
+Return format: { "bullets": ["...", "..."] }
 
 <transcripts>
 ${nonEmpty.join('\n\n---\n\n')}
@@ -232,11 +248,11 @@ ${nonEmpty.join('\n\n---\n\n')}
 </transcripts>`;
 
   const [rawBullet, sentence] = await Promise.all([
-    callChatGPT(bulletPrompt),
-    callChatGPT(sentencePrompt),
+    callChatGPT(bulletPrompt, true, 0.2),
+    callChatGPT(sentencePrompt, false, 0.3),
   ]);
 
-  const bulletPoints = normalizeBullets(rawBullet || '');
+  const bulletPoints = parseBulletJson(rawBullet);
 
   // Aggregate pain bias
   const aggregatePainBias = painBiases.length > 0
@@ -275,7 +291,7 @@ export async function generateVideoSummary(
 ${transcript}
 </transcript>`;
 
-  const response = await callChatGPT(prompt, true);
+  const response = await callChatGPT(prompt, true, 0.2);
   if (!response) return null;
 
   try {
