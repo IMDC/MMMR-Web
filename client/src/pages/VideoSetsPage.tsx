@@ -6,7 +6,6 @@ import { useVideoSetStore } from '../store/videoSetStore';
 import Header from '../components/layout/Header';
 import Loader from '../components/common/Loader';
 import ConfirmDialog from '../components/common/ConfirmDialog';
-import SentimentBadge from '../components/common/SentimentBadge';
 
 export default function VideoSetsPage() {
   const navigate = useNavigate();
@@ -77,14 +76,6 @@ export default function VideoSetsPage() {
                       </span>
                       <span>{format(new Date(set.datetime), 'MMM d, yyyy')}</span>
                     </div>
-                    {set.sentiment && (
-                      <div className="mt-1.5">
-                        <SentimentBadge sentiment={set.sentiment} />
-                      </div>
-                    )}
-                    {set.isSummaryGenerated && (
-                      <p className="text-xs text-gray-500 mt-1.5 line-clamp-2">{set.summaryAnalysisSentence}</p>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
