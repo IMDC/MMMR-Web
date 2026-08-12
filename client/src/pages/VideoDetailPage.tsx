@@ -31,6 +31,27 @@ export default function VideoDetailPage() {
   const [transcriptionMessage, setTranscriptionMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
+  /*
+  // ── DEV ONLY ────────────────────────────────────────────────────────────────
+  // Comment out this entire block (and the JSX block below marked DEV ONLY)
+  // before deploying to users.
+  const DEV_MANUAL_TRANSCRIPT = true;
+  const [devText, setDevText] = useState('');
+  const [devSaving, setDevSaving] = useState(false);
+  const handleDevSetTranscript = async () => {
+    if (!id || !devText.trim()) return;
+    setDevSaving(true);
+    try {
+      await updateVideo(id, { transcript: devText.trim(), isTranscribed: true } as any);
+      await refreshVideo(id); // re-fetch from DB so useEffect syncs local state
+    } catch (e) {
+      console.error('[DEV] transcript save failed:', e);
+    }
+    setDevSaving(false);
+  };
+  // ── END DEV ONLY ────────────────────────────────────────────────────────────
+  */
+ 
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -173,6 +194,27 @@ export default function VideoDetailPage() {
             ) : (
               <p className="text-sm text-gray-400 italic">No transcript yet. Click "Transcribe" to generate one.</p>
             )}
+
+            {/* ── DEV ONLY — comment out this block before deploying ── 
+            {DEV_MANUAL_TRANSCRIPT && (
+              <div className="mt-3 pt-3 border-t-2 border-dashed border-amber-300 space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">DEV — Set transcript manually</p>
+                <textarea
+                  className="w-full text-sm border border-gray-200 rounded-lg p-2 resize-y min-h-[80px] font-mono focus:outline-none focus:ring-1 focus:ring-amber-400"
+                  placeholder="Paste or type transcript text here..."
+                  value={devText}
+                  onChange={e => setDevText(e.target.value)}
+                />
+                <button
+                  onClick={handleDevSetTranscript}
+                  disabled={devSaving || !devText.trim()}
+                  className="text-xs bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white px-3 py-1.5 rounded-full font-medium transition-colors"
+                >
+                  {devSaving ? 'Saving…' : 'Set as transcript & mark transcribed'}
+                </button>
+              </div>
+            )}
+             ── END DEV ONLY ── */}
           </div>
 
           {/* Annotations */}
