@@ -18,7 +18,7 @@ interface AnalysisStore {
   fetchFrequencyData: (videoSetId: string, minCount?: number) => Promise<FrequencyData>;
   fetchLineGraphData: (videoSetId: string, word: string) => Promise<any>;
   analyzeVideo: (videoId: string, skipTextReports?: boolean) => Promise<any>;
-  analyzeVideoSet: (videoSetId: string) => Promise<any>;
+  analyzeVideoSet: (videoSetId: string, forceAll?: boolean) => Promise<any>;
   setSelectedWord: (word: string) => void;
   clearCache: (videoSetId?: string) => void;
 }
@@ -55,10 +55,10 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     }
   },
 
-  analyzeVideoSet: async (videoSetId) => {
+  analyzeVideoSet: async (videoSetId, forceAll = false) => {
     set({ isAnalyzing: true, lastAnalyzedSetId: videoSetId });
     try {
-      const result = await analysisApi.analyzeVideoSet(videoSetId);
+      const result = await analysisApi.analyzeVideoSet(videoSetId, forceAll);
       // Invalidate frequency cache for this set
       get().clearCache(videoSetId);
       return result;

@@ -4,8 +4,8 @@ export const analysisApi = {
   analyzeVideo: (videoId: string, skipTextReports = false) =>
     apiClient.post('/analysis/chatgpt', { videoId, skipTextReports }).then(r => r.data),
 
-  analyzeVideoSet: (videoSetId: string) =>
-    apiClient.post('/analysis/videoset-summary', { videoSetId }).then(r => r.data),
+  analyzeVideoSet: (videoSetId: string, forceAll = false) =>
+    apiClient.post('/analysis/videoset-summary', { videoSetId, forceAll }).then(r => r.data),
 
   getFrequencyData: (videoSetId: string, minCount = 2) =>
     apiClient.get(`/analysis/frequency/${videoSetId}`, { params: { minCount } }).then(r => r.data),

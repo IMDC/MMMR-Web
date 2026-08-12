@@ -53,6 +53,7 @@ export default function DataAnalysisPage() {
   // Modal states
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([fetchSets(), fetchVideos()]);
@@ -72,11 +73,14 @@ export default function DataAnalysisPage() {
   const runAnalysisAndNavigate = async () => {
     if (!selectedSetId) return;
     setAnalyzing(true);
+    setAnalyzeError(null);
     clearCache(selectedSetId);
     try {
       await analyzeVideoSet(selectedSetId);
       await Promise.all([fetchSets(), fetchVideos()]);
       navigate(`/analysis/${selectedSetId}/report`);
+    } catch {
+      setAnalyzeError('Analysis failed. Please check your connection and try again.');
     } finally {
       setAnalyzing(false);
     }
@@ -88,9 +92,16 @@ export default function DataAnalysisPage() {
       navigate(`/analysis/${selectedSetId}/${id}`);
       return;
     }
-    // Already have a report — just navigate
+    // Already have a report
     if (selectedSet?.isSummaryGenerated) {
-      navigate(`/analysis/${selectedSetId}/report`);
+      const hasNew = setVideos.some(v => v.isTranscribed && !v.bulletPointsLocked);
+      if (hasNew) {
+        // New unanalyzed videos — show overlay, run incremental analysis, then navigate
+        await runAnalysisAndNavigate();
+      } else {
+        // All videos already analyzed — open instantly
+        navigate(`/analysis/${selectedSetId}/report`);
+      }
       return;
     }
     // Need to generate — check global preference
@@ -145,6 +156,13 @@ export default function DataAnalysisPage() {
             </div>
           )}
         </div>
+
+        {/* Analysis error */}
+        {analyzeError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+            {analyzeError}
+          </div>
+        )}
 
         {/* Analysis cards */}
         {selectedSetId && (

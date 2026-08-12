@@ -72,7 +72,7 @@ export async function analyzeVideo(req: Request, res: Response) {
 }
 
 export async function analyzeVideoSetSummary(req: Request, res: Response) {
-  const { videoSetId } = req.body;
+  const { videoSetId, forceAll } = req.body;
   if (!videoSetId) return res.status(400).json({ error: 'videoSetId is required' });
 
   const set = await VideoSet.findOne({ _id: videoSetId, userId: req.userId });
@@ -82,29 +82,49 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
 
   // Analyze each video individually so tsOutputBullet / tsOutputSentence / sentiment
   // are written to VideoData — mirrors the Android per-video analysis flow.
+  let didAnalyzeNew = false;
   for (const video of videos) {
     if (!video.transcript?.trim()) continue;
-    const perVideo = await analyzeVideoTranscript(
-      video.transcript,
-      Array.from(video.emotionStickers || []),
-      video.numericPainScale,
-      Array.from(video.textComments || []),
-    );
-    await VideoData.findByIdAndUpdate(video._id, {
-      tsOutputBullet: perVideo.tsOutputBullet,
-      tsOutputSentence: perVideo.tsOutputSentence,
-      sentiment: perVideo.weightedSentiment.overallSentiment,
-      biasAdjustedSentiment: perVideo.weightedSentiment.overallSentiment,
-      bulletSentiments: JSON.stringify(perVideo.weightedSentiment.bulletSentiments),
-      bulletPointsLocked: true,
+    if (!forceAll && video.bulletPointsLocked) continue;
+    try {
+      const perVideo = await analyzeVideoTranscript(
+        video.transcript,
+        Array.from(video.emotionStickers || []),
+        video.numericPainScale,
+        Array.from(video.textComments || []),
+      );
+      await VideoData.findByIdAndUpdate(video._id, {
+        tsOutputBullet: perVideo.tsOutputBullet,
+        tsOutputSentence: perVideo.tsOutputSentence,
+        sentiment: perVideo.weightedSentiment.overallSentiment,
+        biasAdjustedSentiment: perVideo.weightedSentiment.overallSentiment,
+        bulletSentiments: JSON.stringify(perVideo.weightedSentiment.bulletSentiments),
+        bulletPointsLocked: true,
+      });
+      // Update local reference so set-level aggregation uses fresh data
+      video.sentiment = perVideo.weightedSentiment.overallSentiment;
+      didAnalyzeNew = true;
+    } catch (err) {
+      console.error(`[analyzeVideoSetSummary] Failed to analyze video ${video._id}:`, err);
+      // Continue to the next video — one failure shouldn't block the rest
+    }
+  }
+
+  // If nothing new was analyzed (all videos already locked) and this isn't a force-all,
+  // skip the expensive set-level GPT call and return the existing summary.
+  if (!didAnalyzeNew && !forceAll) {
+    return res.json({
+      summaryAnalysisBullet: set.summaryAnalysisBullet,
+      summaryAnalysisSentence: set.summaryAnalysisSentence,
+      sentiment: set.sentiment,
+      bulletSentiments: set.bulletSentiments ? JSON.parse(set.bulletSentiments as unknown as string) : [],
+      conflictDetected: false,
     });
-    // Update local reference so set-level aggregation uses fresh data
-    video.sentiment = perVideo.weightedSentiment.overallSentiment;
   }
 
   const transcripts = videos.map(v => v.transcript || '');
   const allStickers = videos.flatMap(v => Array.from(v.emotionStickers || []));
-  const painBiases = videos.map(v => getPainBias(getPainSentiment(v.numericScale)));
+  const painBiases = videos.map(v => getPainBias(getPainSentiment(v.numericPainScale)));
 
   const result = await analyzeVideoSet(transcripts, allStickers, painBiases);
 
