@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  ResponsiveContainer, Legend, ReferenceArea,
 } from 'recharts';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoSetStore } from '../store/videoSetStore';
@@ -14,7 +14,7 @@ const HOUR_LABELS = [
   '12AM','1AM','2AM','3AM','4AM','5AM','6AM','7AM','8AM','9AM','10AM','11AM',
   '12PM','1PM','2PM','3PM','4PM','5PM','6PM','7PM','8PM','9PM','10PM','11PM',
 ];
-const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const COMPARISON_COLORS = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FF8E53','#9B59B6'];
 const MAIN_COLOR = '#6B8E23';
 
@@ -52,10 +52,10 @@ function computeLineData(freqMaps: FreqMap[], word: string) {
     const d = new Date(item.datetime);
     const dateStr = d.toDateString();
     const hour = d.getHours();
-    const dow  = d.getDay();
+    const dow  = (d.getDay() + 6) % 7; // Mon=0 … Sun=6
 
-    // Week bounds
-    const ws = new Date(d); ws.setDate(d.getDate() - d.getDay());
+    // Week bounds — Monday-anchored
+    const ws = new Date(d); ws.setDate(d.getDate() - dow);
     const we = new Date(ws); we.setDate(ws.getDate() + 6);
     const weekLabel = `${ws.toDateString()} - ${we.toDateString()}`;
 
@@ -396,6 +396,10 @@ export default function LineGraphPage() {
                         wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                         formatter={(value) => value}
                       />
+                    )}
+                    {/* Weekend shading — Sat & Sun only shown in weekly view */}
+                    {period === 'weekly' && (
+                      <ReferenceArea x1="Sat" x2="Sun" fill="#94a3b8" fillOpacity={0.12} />
                     )}
                     {allLines.map(({ word, color }) => (
                       <Line
