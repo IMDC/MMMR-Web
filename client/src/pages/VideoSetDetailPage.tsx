@@ -4,8 +4,8 @@ import { ArrowLeft, BarChart2, Plus, Minus, Video, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useVideoSetStore } from '../store/videoSetStore';
 import { useVideoStore } from '../store/videoStore';
+import { useAnalysisStore } from '../store/analysisStore';
 import VideoCard from '../components/video/VideoCard';
-import SentimentBadge from '../components/common/SentimentBadge';
 import Loader from '../components/common/Loader';
 import { videosApi } from '../api/videos';
 
@@ -14,6 +14,7 @@ export default function VideoSetDetailPage() {
   const navigate = useNavigate();
   const { videoSets, refreshSet, removeVideoFromSet, addVideosToSet } = useVideoSetStore();
   const { videos, fetchVideos } = useVideoStore();
+  const { clearCache } = useAnalysisStore();
   const [loading, setLoading] = useState(true);
   const [addMode, setAddMode] = useState(false);
 
@@ -101,7 +102,7 @@ export default function VideoSetDetailPage() {
                         preload="metadata"
                       />
                       <button
-                        onClick={() => removeVideoFromSet(set._id, v._id)}
+                        onClick={() => { removeVideoFromSet(set._id, v._id); clearCache(set._id); }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-md z-10"
                         aria-label={`Remove ${v.title} from set`}
                       >
@@ -128,6 +129,7 @@ export default function VideoSetDetailPage() {
                       key={v._id}
                       onClick={async () => {
                         await addVideosToSet(set._id, [v._id]);
+                        clearCache(set._id);
                         await refreshSet(set._id);
                       }}
                       className="text-left hover:ring-2 hover:ring-mhmr-olive rounded-2xl transition-all active:scale-[0.98]"
@@ -143,17 +145,6 @@ export default function VideoSetDetailPage() {
       ) : (
         /* ── Normal mode: scrollable ── */
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Set summary */}
-          {set.isSummaryGenerated && (
-            <div className="card">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="section-title mb-0">Video Set Summary</h2>
-                {set.sentiment && <SentimentBadge sentiment={set.sentiment} size="md" />}
-              </div>
-              <p className="text-sm text-gray-600">{set.summaryAnalysisSentence}</p>
-            </div>
-          )}
-
           {/* Videos in set */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -178,7 +169,7 @@ export default function VideoSetDetailPage() {
                   <div key={video._id} className="relative">
                     <VideoCard video={video} />
                     <button
-                      onClick={() => removeVideoFromSet(set._id, video._id)}
+                      onClick={() => { removeVideoFromSet(set._id, video._id); clearCache(set._id); }}
                       className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors z-10"
                       aria-label={`Remove ${video.title} from set`}
                     >
