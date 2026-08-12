@@ -57,7 +57,7 @@ export default function WordCloudPage() {
       const { width } = el.getBoundingClientRect();
       if (width > 0) {
         const w = Math.min(Math.floor(width), 900);
-        setCanvasSize({ w, h: Math.floor(w * 0.5) });
+        setCanvasSize({ w, h: Math.floor(w * 0.6) });
       }
     };
     update();
@@ -119,11 +119,11 @@ export default function WordCloudPage() {
       // gridSize controls placement resolution — smaller = tighter packing
       gridSize: Math.max(2, Math.round(canvasSize.w / 120)),
       weightFactor: (size: number) => {
-        // Exponent > 1 makes low-frequency words much smaller vs the top word
         const ratio = size / maxVal;
-        const maxPx = canvasSize.h * 0.16;
-        const minPx = Math.max(7, canvasSize.h * 0.012);
-        return Math.max(minPx, Math.pow(ratio, 1.8) * maxPx);
+        const maxPx = Math.min(canvasSize.h * 0.11, 72);
+        const minPx = Math.max(13, canvasSize.h * 0.028);
+        // Exponent < 1 compresses the size range so low-frequency words stay readable
+        return minPx + Math.pow(ratio, 0.60) * (maxPx - minPx);
       },
       fontFamily: 'Arial, sans-serif',
       fontWeight: 'bold',
