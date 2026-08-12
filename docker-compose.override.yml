@@ -1,0 +1,6 @@
+# Local development only — overrides picked up automatically by docker compose
+# Coolify does NOT use this file (it only reads docker-compose.yml)
+services:
+  frontend:
+    ports:
+      - "80:80"
