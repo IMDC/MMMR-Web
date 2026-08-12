@@ -97,7 +97,7 @@ export default function TextReportPage() {
     if (!setId) return;
     setRegenerating(true);
     try {
-      await analyzeVideoSet(setId);
+      await analyzeVideoSet(setId, true);
       // Refresh both set (summary) and individual videos (tsOutputBullet, sentiment, etc.)
       await Promise.all([fetchSets(), fetchVideos()]);
     } finally {
@@ -130,7 +130,6 @@ export default function TextReportPage() {
           <ArrowLeft size={22} aria-hidden="true" />
         </button>
         <h1 className="text-white font-bold flex-1">Text Report</h1>
-        {set.sentiment && <SentimentBadge sentiment={set.sentiment} />}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -196,7 +195,7 @@ export default function TextReportPage() {
                 >
                   {regenerating
                     ? <><Loader2 size={13} className="animate-spin" aria-hidden="true" /> Regenerating...</>
-                    : 'Regenerate Report'}
+                    : 'Regenerate All'}
                 </button>
               </div>
             )}
@@ -359,7 +358,7 @@ export default function TextReportPage() {
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-sm text-gray-400 italic">No bullet point output generated.</p>
+                            <p className="text-sm text-gray-400 italic">No relevant health information found in this recording.</p>
                           )
                         ) : (
                           video.tsOutputSentence
