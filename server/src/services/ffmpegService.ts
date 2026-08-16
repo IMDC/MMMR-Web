@@ -1,10 +1,17 @@
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import path from 'path';
 import fs from 'fs';
 import { userUploadDir } from '../utils/userPaths';
 
-ffmpeg.setFfmpegPath(ffmpegPath.path);
+// In Docker, use the system FFmpeg installed via apk.
+// Locally, fall back to the @ffmpeg-installer/ffmpeg npm package.
+if (process.env.NODE_ENV === 'production') {
+  ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
+} else {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const ffmpegPath = require('@ffmpeg-installer/ffmpeg');
+  ffmpeg.setFfmpegPath(ffmpegPath.path);
+}
 
 // All file operations are scoped to the owning participant's upload folder.
 export async function extractAudio(userId: string, videoFilename: string): Promise<string> {
