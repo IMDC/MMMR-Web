@@ -147,6 +147,7 @@ export async function transcribeVideoById(req: Request, res: Response) {
       frequencyData: result.frequencyData,
     });
   } catch (error: any) {
+    console.error('[transcribeVideoById]', error);
     res.status(500).json({ error: error.message || 'Transcription failed' });
   }
 }
