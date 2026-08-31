@@ -2,8 +2,15 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User';
 
-function publicUser(user: { _id: any; username: string; displayName: string }) {
-  return { id: user._id.toString(), username: user.username, displayName: user.displayName };
+function publicUser(user: { _id: any; username: string; displayName: string; aiConsent?: any; autoTranscribe?: any; summaryFormat?: any }) {
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    displayName: user.displayName,
+    aiConsent: user.aiConsent ?? null,
+    autoTranscribe: user.autoTranscribe ?? null,
+    summaryFormat: user.summaryFormat ?? 'both',
+  };
 }
 
 export async function login(req: Request, res: Response) {
@@ -42,6 +49,23 @@ export async function me(req: Request, res: Response) {
     req.session.destroy(() => {});
     return res.status(401).json({ error: 'Not authenticated' });
   }
+
+  res.json(publicUser(user));
+}
+
+export async function updatePreferences(req: Request, res: Response) {
+  const userId = req.session?.userId;
+  if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+  const { displayName, aiConsent, autoTranscribe, summaryFormat } = req.body;
+  const update: Record<string, any> = {};
+  if (displayName !== undefined) update.displayName = String(displayName).trim().slice(0, 40);
+  if (aiConsent !== undefined) update.aiConsent = aiConsent;
+  if (autoTranscribe !== undefined) update.autoTranscribe = autoTranscribe;
+  if (summaryFormat !== undefined) update.summaryFormat = summaryFormat;
+
+  const user = await User.findByIdAndUpdate(userId, update, { new: true });
+  if (!user) return res.status(404).json({ error: 'User not found' });
 
   res.json(publicUser(user));
 }

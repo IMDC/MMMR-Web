@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { authApi, AuthUser } from '../api/auth';
+import { authApi, AuthUser, UserPreferences } from '../api/auth';
 import { useVideoStore } from './videoStore';
 import { useVideoSetStore } from './videoSetStore';
 import { useAnalysisStore } from './analysisStore';
@@ -13,6 +13,7 @@ interface AuthStore {
   checkSession: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updatePreferences: (prefs: UserPreferences) => Promise<void>;
 }
 
 // Clear all participant data caches so nothing leaks between logins.
@@ -48,5 +49,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
       resetDataStores();
       set({ user: null, status: 'anon' });
     }
+  },
+
+  updatePreferences: async (prefs) => {
+    const updated = await authApi.updatePreferences(prefs);
+    set({ user: updated });
   },
 }));

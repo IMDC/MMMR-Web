@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Mic, Sparkles } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
 
 interface Props {
-  userId: string;
   onComplete: () => void;
 }
 
-export default function OnboardingModal({ userId, onComplete }: Props) {
+export default function OnboardingModal({ onComplete }: Props) {
+  const updatePreferences = useAuthStore(s => s.updatePreferences);
   const [step, setStep] = useState<1 | 2>(1);
   const [displayName, setDisplayName] = useState('');
 
@@ -15,9 +16,8 @@ export default function OnboardingModal({ userId, onComplete }: Props) {
     setStep(2);
   };
 
-  const handleConsent = (agreed: boolean) => {
-    localStorage.setItem(`mhmr_displayname_${userId}`, displayName.trim());
-    localStorage.setItem(`mhmr_ai_consent_${userId}`, agreed ? 'agreed' : 'disagreed');
+  const handleConsent = async (agreed: boolean) => {
+    await updatePreferences({ displayName: displayName.trim(), aiConsent: agreed ? 'agreed' : 'disagreed' });
     onComplete();
   };
 

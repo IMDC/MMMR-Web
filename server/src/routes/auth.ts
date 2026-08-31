@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { asyncWrapper } from '../middleware/asyncWrapper';
-import { login, logout, me } from '../controllers/authController';
+import { login, logout, me, updatePreferences } from '../controllers/authController';
 
 const router = Router();
 
@@ -38,5 +38,6 @@ function loginRateLimit(req: Request, res: Response, next: NextFunction) {
 router.post('/login', loginRateLimit, asyncWrapper(login));
 router.post('/logout', asyncWrapper(logout));
 router.get('/me', asyncWrapper(me));
+router.patch('/preferences', asyncWrapper(updatePreferences));
 
 export default router;

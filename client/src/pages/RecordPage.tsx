@@ -11,8 +11,8 @@ type RecordingState = 'idle' | 'preview' | 'recording' | 'recorded' | 'uploading
 export default function RecordPage() {
   const navigate = useNavigate();
   const { uploadVideo } = useVideoStore();
-  const userId = useAuthStore(s => s.user?.id ?? 'guest');
-  const autotranscribeKey = `mhmr_autotranscribe_${userId}`;
+  const user = useAuthStore(s => s.user);
+  const updatePreferences = useAuthStore(s => s.updatePreferences);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -122,11 +122,10 @@ export default function RecordPage() {
       const video = await uploadVideo(file, title || new Date().toLocaleString(), pct => setUploadProgress(pct));
       setSavedVideoId(video._id);
 
-      const pref = localStorage.getItem(autotranscribeKey);
-      if (pref === null) {
+      if (user?.autoTranscribe === null || user?.autoTranscribe === undefined) {
         // First time — show preference prompt before post-save modal
         setShowTranscribePrompt(true);
-      } else if (pref === 'true') {
+      } else if (user?.autoTranscribe === true) {
         // Auto-transcribe
         runTranscription(video._id);
       }
@@ -139,7 +138,7 @@ export default function RecordPage() {
   };
 
   const handleTranscribePref = (enabled: boolean) => {
-    localStorage.setItem(autotranscribeKey, String(enabled));
+    updatePreferences({ autoTranscribe: enabled });
     setShowTranscribePrompt(false);
     if (enabled && savedVideoId) {
       runTranscription(savedVideoId);

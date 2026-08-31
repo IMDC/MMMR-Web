@@ -4,6 +4,16 @@ export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
+  aiConsent: 'agreed' | 'disagreed' | null;
+  autoTranscribe: boolean | null;
+  summaryFormat: 'sentence' | 'chips' | 'both';
+}
+
+export interface UserPreferences {
+  displayName?: string;
+  aiConsent?: 'agreed' | 'disagreed' | null;
+  autoTranscribe?: boolean | null;
+  summaryFormat?: 'sentence' | 'chips' | 'both';
 }
 
 export const authApi = {
@@ -15,4 +25,7 @@ export const authApi = {
 
   me: () =>
     apiClient.get<AuthUser>('/auth/me').then(r => r.data),
+
+  updatePreferences: (prefs: UserPreferences) =>
+    apiClient.patch<AuthUser>('/auth/preferences', prefs).then(r => r.data),
 };
