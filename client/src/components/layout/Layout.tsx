@@ -22,7 +22,7 @@ export default function Layout() {
 
   useEffect(() => {
     if (!user) return;
-    if (!localStorage.getItem(`mhmr_displayname_${user.id}`)) {
+    if (!user.displayName) {
       setShowOnboarding(true);
     }
   }, [user?.id]);
@@ -59,7 +59,7 @@ export default function Layout() {
       <SentimentConflictModal />
       <GlobalLoader />
       {showOnboarding && user && (
-        <OnboardingModal userId={user.id} onComplete={() => setShowOnboarding(false)} />
+        <OnboardingModal onComplete={() => setShowOnboarding(false)} />
       )}
     </div>
   );

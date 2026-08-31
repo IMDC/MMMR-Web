@@ -38,8 +38,7 @@ export default function TopNav() {
     navigate('/login', { replace: true });
   };
 
-  const localDisplayName = user ? localStorage.getItem(`mhmr_displayname_${user.id}`) : null;
-  const displayLabel = localDisplayName || user?.displayName || user?.username;
+  const displayLabel = user?.displayName || user?.username;
 
   return (
     <nav className="hidden lg:flex items-center h-14 bg-mhmr-olive px-5 gap-1 shrink-0 shadow-sm z-20">

@@ -4,44 +4,32 @@ import Header from '../components/layout/Header';
 import { useAuthStore } from '../store/authStore';
 
 export default function SettingsPage() {
-  const userId = useAuthStore(s => s.user?.id ?? 'guest');
-  const autotranscribeKey = `mhmr_autotranscribe_${userId}`;
-  const aiConsentKey = `mhmr_ai_consent_${userId}`;
-  const summaryFormatKey = `mhmr_summary_format_${userId}`;
+  const user = useAuthStore(s => s.user);
+  const updatePreferences = useAuthStore(s => s.updatePreferences);
 
-  const [autoTranscribe, setAutoTranscribe] = useState<boolean | null>(() => {
-    const pref = localStorage.getItem(autotranscribeKey);
-    if (pref === null) return null;
-    return pref === 'true';
-  });
-
-  const [aiEnabled, setAiEnabled] = useState(
-    () => localStorage.getItem(aiConsentKey) === 'agreed'
-  );
+  const [autoTranscribe, setAutoTranscribe] = useState<boolean | null>(user?.autoTranscribe ?? null);
+  const [aiEnabled, setAiEnabled] = useState(user?.aiConsent === 'agreed');
   const [showAiConfirm, setShowAiConfirm] = useState(false);
-
-  const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(
-    () => (localStorage.getItem(summaryFormatKey) as 'sentence' | 'chips' | 'both') || 'both',
-  );
+  const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(user?.summaryFormat ?? 'both');
 
   const toggle = (enabled: boolean) => {
-    localStorage.setItem(autotranscribeKey, String(enabled));
     setAutoTranscribe(enabled);
+    updatePreferences({ autoTranscribe: enabled });
   };
 
   const handleAiToggle = () => {
     if (aiEnabled) {
-      localStorage.setItem(aiConsentKey, 'disagreed');
       setAiEnabled(false);
+      updatePreferences({ aiConsent: 'disagreed' });
     } else {
       setShowAiConfirm(true);
     }
   };
 
   const confirmAiEnable = () => {
-    localStorage.setItem(aiConsentKey, 'agreed');
     setAiEnabled(true);
     setShowAiConfirm(false);
+    updatePreferences({ aiConsent: 'agreed' });
   };
 
   return (
@@ -149,8 +137,8 @@ export default function SettingsPage() {
                   <button
                     key={fmt}
                     onClick={() => {
-                      localStorage.setItem(summaryFormatKey, fmt);
                       setSummaryFormat(fmt);
+                      updatePreferences({ summaryFormat: fmt });
                     }}
                     className={`flex items-center justify-between p-3 rounded-xl border-2 transition-colors text-left ${
                       summaryFormat === fmt ? 'border-mhmr-olive bg-mhmr-olive/5' : 'border-gray-100 hover:border-gray-300'

@@ -24,16 +24,11 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
   const navigate = useNavigate();
   const { deleteVideo, updateVideo } = useVideoStore();
   const { videoSets, fetchSets, addVideosToSet, createSet } = useVideoSetStore();
-  const userId = useAuthStore(s => s.user?.id ?? 'guest');
-  const aiConsentKey = `mhmr_ai_consent_${userId}`;
-  const summaryFormatKey = `mhmr_summary_format_${userId}`;
+  const user = useAuthStore(s => s.user);
+  const updatePreferences = useAuthStore(s => s.updatePreferences);
 
-  const [summaryEnabled, setSummaryEnabled] = useState(
-    () => localStorage.getItem(aiConsentKey) === 'agreed',
-  );
-  const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(
-    () => (localStorage.getItem(summaryFormatKey) as 'sentence' | 'chips' | 'both') || 'both',
-  );
+  const [summaryEnabled, setSummaryEnabled] = useState(() => user?.aiConsent === 'agreed');
+  const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(() => user?.summaryFormat ?? 'both');
   const [showSummaryPicker, setShowSummaryPicker] = useState(false);
   const [pickerFormat, setPickerFormat] = useState<'sentence' | 'chips' | 'both'>('both');
 
@@ -488,9 +483,9 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               <div className="flex items-center justify-between pt-1">
                 <button
                   onClick={() => {
-                    localStorage.setItem(aiConsentKey, 'disagreed');
                     setSummaryEnabled(false);
                     setShowSummaryPicker(false);
+                    updatePreferences({ aiConsent: 'disagreed' });
                   }}
                   className="text-xs text-gray-400 hover:text-gray-600 underline"
                 >
@@ -498,9 +493,9 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
                 </button>
                 <button
                   onClick={() => {
-                    localStorage.setItem(summaryFormatKey, pickerFormat);
                     setSummaryFormat(pickerFormat);
                     setShowSummaryPicker(false);
+                    updatePreferences({ summaryFormat: pickerFormat });
                   }}
                   className="btn-primary text-sm px-4 py-1.5"
                 >

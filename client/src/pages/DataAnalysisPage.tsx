@@ -44,11 +44,11 @@ export default function DataAnalysisPage() {
   const { videoSets, fetchSets } = useVideoSetStore();
   const { videos, fetchVideos } = useVideoStore();
   const { analyzeVideoSet, clearCache } = useAnalysisStore();
-  const userId = useAuthStore(s => s.user?.id ?? 'guest');
-  const aiConsentKey = `mhmr_ai_consent_${userId}`;
+  const user = useAuthStore(s => s.user);
+  const updatePreferences = useAuthStore(s => s.updatePreferences);
   const [selectedSetId, setSelectedSetId] = useState(searchParams.get('setId') || '');
 
-  const aiGlobalEnabled = localStorage.getItem(aiConsentKey) === 'agreed';
+  const aiGlobalEnabled = user?.aiConsent === 'agreed';
 
   // Modal states
   const [showConsentModal, setShowConsentModal] = useState(false);
@@ -119,7 +119,7 @@ export default function DataAnalysisPage() {
   };
 
   const handleConsentYesForAll = async () => {
-    localStorage.setItem(aiConsentKey, 'agreed');
+    updatePreferences({ aiConsent: 'agreed' });
     setShowConsentModal(false);
     await runAnalysisAndNavigate();
   };
