@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BarChart2, TrendingUp, Cloud, FileText, Loader2, ChevronRight } from 'lucide-react';
+import { BarChart2, TrendingUp, Cloud, FileText, Loader2 } from 'lucide-react';
 import { useVideoSetStore } from '../store/videoSetStore';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoStore } from '../store/videoStore';
@@ -171,16 +171,13 @@ export default function DataAnalysisPage() {
               <button
                 key={id}
                 onClick={() => handleCardClick(id)}
-                className="card text-left hover:shadow-md transition-shadow active:scale-[0.98]"
+                className="card flex flex-col items-center text-center hover:shadow-md transition-shadow active:scale-[0.98]"
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
-                  <Icon size={20} />
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${color}`}>
+                  <Icon size={26} />
                 </div>
-                <h3 className="font-semibold text-gray-800 text-sm">{label}</h3>
-                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{description}</p>
-                <div className="flex items-center justify-end mt-3">
-                  <ChevronRight size={16} className="text-gray-300" />
-                </div>
+                <h3 className="font-semibold text-gray-800">{label}</h3>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{description}</p>
               </button>
             ))}
           </div>
