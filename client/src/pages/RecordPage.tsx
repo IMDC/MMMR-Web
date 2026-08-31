@@ -51,7 +51,7 @@ export default function RecordPage() {
       const isPortrait = window.innerHeight > window.innerWidth;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isPortrait
-          ? { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } }
+          ? { facingMode: 'user' }
           : { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: audioEnabled,
       });
@@ -171,11 +171,12 @@ export default function RecordPage() {
           </div>
         )}
 
-        {/* Video area — full width, fills remaining height */}
-        <div className="flex-1 min-h-0 md:max-h-[62vh] lg:max-h-none relative bg-black rounded-2xl overflow-hidden">
+        {/* Video area — 9:16 on mobile, fills remaining height on desktop */}
+        <div className="relative bg-black rounded-2xl overflow-hidden w-full aspect-[9/16] md:aspect-auto md:flex-1 md:min-h-0 md:max-h-[62vh] lg:max-h-none">
             <video
               ref={videoRef}
               className="w-full h-full object-cover"
+              style={state !== 'idle' ? { transform: 'scaleX(-1)' } : undefined}
               playsInline
               controls={state === 'recorded'}
             />
