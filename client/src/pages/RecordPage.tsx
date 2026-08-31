@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
+import { Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
 import { videosApi } from '../api/videos';
@@ -40,9 +40,12 @@ export default function RecordPage() {
       .catch(() => setTranscribeStatus('error'));
   };
 
-  useEffect(() => () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    if (timerRef.current) clearInterval(timerRef.current);
+  useEffect(() => {
+    startPreview();
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
   const startPreview = async () => {
@@ -70,11 +73,9 @@ export default function RecordPage() {
   const startRecording = () => {
     if (!streamRef.current) return;
     chunksRef.current = [];
-
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
       ? 'video/webm;codecs=vp9,opus'
       : 'video/webm';
-
     const recorder = new MediaRecorder(streamRef.current, { mimeType });
     mediaRecorderRef.current = recorder;
 
@@ -82,12 +83,10 @@ export default function RecordPage() {
     recorder.onstop = () => {
       const recordedBlob = new Blob(chunksRef.current, { type: 'video/webm' });
       setBlob(recordedBlob);
-
       if (videoRef.current) {
         videoRef.current.srcObject = null;
         videoRef.current.src = URL.createObjectURL(recordedBlob);
         videoRef.current.muted = false;
-        // Don't auto-play — leave paused so user can review before saving
       }
       streamRef.current?.getTracks().forEach(t => t.stop());
       setState('recorded');
@@ -95,7 +94,6 @@ export default function RecordPage() {
 
     recorder.start(100);
     setState('recording');
-
     setElapsed(0);
     timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
   };
@@ -155,6 +153,7 @@ export default function RecordPage() {
     setShowTranscribePrompt(false);
     if (videoRef.current) videoRef.current.src = '';
     setState('idle');
+    startPreview();
   };
 
   const formatTime = (s: number) =>
@@ -183,7 +182,7 @@ export default function RecordPage() {
             {state === 'idle' && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center text-white">
-                  <Camera size={48} className="mx-auto mb-3 opacity-50" />
+                  <Circle size={48} className="mx-auto mb-3 opacity-50" />
                   <p className="text-sm opacity-60">Camera preview will appear here</p>
                 </div>
               </div>
@@ -224,15 +223,12 @@ export default function RecordPage() {
           )}
 
           <div className="flex gap-3">
-            {state === 'idle' && (
-              <button onClick={startPreview} className="btn-primary flex-1 flex items-center justify-center gap-2">
-                <Camera size={18} />
-                Start Camera
-              </button>
-            )}
-
-            {state === 'preview' && (
-              <button onClick={startRecording} className="btn-primary flex-1 flex items-center justify-center gap-2">
+            {(state === 'idle' || state === 'preview') && (
+              <button
+                onClick={startRecording}
+                disabled={state === 'idle'}
+                className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <Circle size={18} className="fill-current" />
                 Start Recording
               </button>
