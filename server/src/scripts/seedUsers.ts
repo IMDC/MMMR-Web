@@ -16,6 +16,8 @@ const USERS = [
   { username: 'participant1', password: 'pass1', displayName: 'Participant 1' },
   { username: 'participant2', password: 'pass2', displayName: 'Participant 2' },
   { username: 'participant3', password: 'pass3', displayName: 'Participant 3' },
+  { username: 'participant4', password: 'pass4', displayName: 'Participant 4' },
+  { username: 'participant5', password: 'pass5', displayName: 'Participant 5' },
 ];
 
 async function run() {
