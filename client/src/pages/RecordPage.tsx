@@ -266,7 +266,7 @@ export default function RecordPage() {
             <video
               ref={videoRef}
               className="w-full h-full object-cover"
-              style={state !== 'idle' ? { transform: 'scaleX(-1)' } : undefined}
+              style={(state === 'preview' || state === 'recording') ? { transform: 'scaleX(-1)' } : undefined}
               playsInline
               controls={state === 'recorded'}
             />
