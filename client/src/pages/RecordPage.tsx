@@ -66,7 +66,7 @@ export default function RecordPage() {
       }
       setState('preview');
     } catch {
-      setError('Camera/microphone access denied. Please allow access and try again.');
+      setError('Camera and Microphone not detected');
     }
   };
 
