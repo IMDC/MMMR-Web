@@ -5,9 +5,10 @@ export default {
     extend: {
       colors: {
         mhmr: {
-          olive: '#6B8E23',
-          'olive-dark': '#556B2F',
-          'olive-light': '#8FAF40',
+          // Army Green
+          olive: '#4B5320',
+          'olive-dark': '#3a4119',
+          'olive-light': '#5e6828',
           navy: '#1c4587',
           grey: '#C7CBD1',
           'grey-dark': '#808080',
