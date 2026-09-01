@@ -14,6 +14,7 @@ interface VideoStore {
   deleteVideo: (id: string) => Promise<void>;
   setTranscriptionProgress: (videoId: string, progress: TranscriptionProgress | null) => void;
   refreshVideo: (id: string) => Promise<void>;
+  startTranscription: (videoId: string) => Promise<void>;
 }
 
 export const useVideoStore = create<VideoStore>((set, get) => ({
@@ -72,5 +73,17 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
     set(state => ({
       videos: state.videos.map(v => v._id === id ? updated : v),
     }));
+  },
+
+  startTranscription: async (videoId) => {
+    get().setTranscriptionProgress(videoId, { stage: 'transcribing', progress: 0, message: 'Transcribing...' });
+    try {
+      await videosApi.transcribe(videoId);
+      await get().refreshVideo(videoId);
+      get().setTranscriptionProgress(videoId, null);
+    } catch (err) {
+      get().setTranscriptionProgress(videoId, { stage: 'error', progress: 0, message: 'Transcription failed' });
+      throw err;
+    }
   },
 }));
