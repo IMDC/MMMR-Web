@@ -400,7 +400,18 @@ export default function LineGraphPage() {
                 <p className="text-sm text-gray-400 text-center py-8 italic">No data for this period.</p>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(data: any) => {
+                      if (!data || data.activeTooltipIndex == null || !data.activePayload?.[0]) return;
+                      const index = data.activeTooltipIndex;
+                      const word = data.activePayload[0].dataKey as string;
+                      const color = allLines.find(l => l.word === word)?.color || MAIN_COLOR;
+                      handleDotClick(index, word, color);
+                    }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis
                       dataKey="xLabel"
@@ -422,7 +433,6 @@ export default function LineGraphPage() {
                         formatter={(value) => value}
                       />
                     )}
-                    {/* Weekend shading — Sat & Sun only shown in weekly view */}
                     {period === 'weekly' && (
                       <ReferenceArea x1="Sat" x2="Sun" fill="#94a3b8" fillOpacity={0.12} />
                     )}
@@ -434,25 +444,8 @@ export default function LineGraphPage() {
                         name={word}
                         stroke={color}
                         strokeWidth={2.5}
-                        dot={(props: any) => {
-                          const { cx, cy, index } = props;
-                          if (cx == null || cy == null) return <g key={index} />;
-                          const hasVideos = (period === 'daily'
-                            ? lineDataByWord[word]?.byHour[dateIdx]?.[index]?.videoIDs.length
-                            : period === 'weekly'
-                            ? lineDataByWord[word]?.byWeek[dateIdx]?.[index]?.videoIDs.length
-                            : lineDataByWord[word]?.byRange[index]?.videoIDs.length) ?? 0;
-                          return (
-                            <circle
-                              key={index}
-                              cx={cx} cy={cy} r={hasVideos ? 5 : 4}
-                              fill={color} stroke="white" strokeWidth={2}
-                              style={{ cursor: hasVideos ? 'pointer' : 'default' }}
-                              onClick={() => hasVideos && handleDotClick(index, word, color)}
-                            />
-                          );
-                        }}
-                        activeDot={{ r: 7, cursor: 'pointer', stroke: 'white', strokeWidth: 2 }}
+                        dot={{ r: 5, fill: color, strokeWidth: 2, stroke: 'white' }}
+                        activeDot={{ r: 8, stroke: 'white', strokeWidth: 2 }}
                         connectNulls
                       />
                     ))}
