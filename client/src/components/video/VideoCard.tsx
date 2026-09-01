@@ -22,8 +22,9 @@ interface Props {
 
 export default function VideoCard({ video, selectable, selected, onSelect, inSet, readOnly }: Props) {
   const navigate = useNavigate();
-  const { deleteVideo, updateVideo } = useVideoStore();
+  const { deleteVideo, updateVideo, transcriptionJobs } = useVideoStore();
   const { videoSets, fetchSets, addVideosToSet, createSet } = useVideoSetStore();
+  const isTranscribing = transcriptionJobs.has(video._id);
   const user = useAuthStore(s => s.user);
   const updatePreferences = useAuthStore(s => s.updatePreferences);
 
@@ -286,10 +287,17 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             <span className="text-xs text-gray-500">
               {Math.floor(video.duration / 60)}:{String(Math.floor(video.duration % 60)).padStart(2, '0')}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-              ${video.isTranscribed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-              {video.isTranscribed ? 'Transcribed' : 'Not transcribed'}
-            </span>
+            {isTranscribing ? (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-600 flex items-center gap-1">
+                <Loader2 size={10} className="animate-spin" aria-hidden="true" />
+                Transcribing…
+              </span>
+            ) : (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium
+                ${video.isTranscribed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                {video.isTranscribed ? 'Transcribed' : 'Not transcribed'}
+              </span>
+            )}
             {inSet !== undefined && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium
                 ${inSet ? 'bg-purple-100 text-purple-700' : 'bg-orange-50 text-orange-600'}`}>

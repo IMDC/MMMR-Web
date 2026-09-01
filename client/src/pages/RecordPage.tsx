@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
-import { videosApi } from '../api/videos';
 import ProgressBar from '../components/common/ProgressBar';
 
 type RecordingState = 'idle' | 'preview' | 'recording' | 'recorded' | 'uploading' | 'saved';
@@ -11,7 +10,7 @@ interface Devices { cameras: MediaDeviceInfo[]; mics: MediaDeviceInfo[]; speaker
 
 export default function RecordPage() {
   const navigate = useNavigate();
-  const { uploadVideo } = useVideoStore();
+  const { uploadVideo, startTranscription } = useVideoStore();
   const user = useAuthStore(s => s.user);
   const updatePreferences = useAuthStore(s => s.updatePreferences);
 
@@ -77,7 +76,7 @@ export default function RecordPage() {
   const runTranscription = (id: string) => {
     setAutoTranscribeStarted(true);
     setTranscribeStatus('running');
-    videosApi.transcribe(id)
+    startTranscription(id)
       .then(() => setTranscribeStatus('done'))
       .catch(() => setTranscribeStatus('error'));
   };
