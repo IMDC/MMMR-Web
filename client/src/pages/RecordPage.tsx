@@ -55,13 +55,19 @@ export default function RecordPage() {
       audioContextRef.current = ctx;
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
+      analyser.fftSize = 256;
       source.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
+      const data = new Uint8Array(analyser.fftSize);
+      let smoothed = 0;
       const tick = () => {
-        analyser.getByteFrequencyData(data);
-        const avg = data.reduce((a, b) => a + b, 0) / data.length;
-        setMicLevel(Math.min(100, avg * 2.5));
+        analyser.getByteTimeDomainData(data);
+        // RMS of waveform (values centered at 128)
+        const rms = Math.sqrt(data.reduce((sum, v) => sum + (v - 128) ** 2, 0) / data.length);
+        const instant = Math.min(100, rms * 4);
+        // Fast attack, slow decay
+        const alpha = instant > smoothed ? 0.5 : 0.08;
+        smoothed = smoothed * (1 - alpha) + instant * alpha;
+        setMicLevel(Math.round(smoothed));
         micFrameRef.current = requestAnimationFrame(tick);
       };
       tick();
@@ -356,7 +362,7 @@ export default function RecordPage() {
                         <span className="text-xs text-gray-400 shrink-0">Level</span>
                         <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full rounded-full transition-all duration-75"
+                            className="h-full rounded-full"
                             style={{ width: `${micLevel}%`, backgroundColor: micLevel > 80 ? '#e65100' : micLevel > 40 ? '#2e7d32' : '#616161' }}
                           />
                         </div>
