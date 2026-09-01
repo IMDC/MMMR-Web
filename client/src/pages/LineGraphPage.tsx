@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, X, ChevronLeft, ChevronRight, Video } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, ReferenceArea,
 } from 'recharts';
 import { useAnalysisStore } from '../store/analysisStore';
 import { useVideoSetStore } from '../store/videoSetStore';
+import { useVideoStore } from '../store/videoStore';
 import Loader from '../components/common/Loader';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ type Period = 'daily' | 'weekly' | 'range';
 interface FreqMap { map: Record<string, number>; datetime: string; videoID: string; }
 interface DataPoint { label: string | number; value: number; videoIDs: string[]; }
 interface WordLine { word: string; color: string; }
+interface ClickedPoint { word: string; xLabel: string; videoIDs: string[]; color: string; }
 
 // ── Client-side line data computation (matches Android lineGraphData.tsx) ─────
 function computeLineData(freqMaps: FreqMap[], word: string) {
@@ -107,6 +109,7 @@ export default function LineGraphPage() {
   const navigate = useNavigate();
   const { fetchFrequencyData, selectedWord, setSelectedWord } = useAnalysisStore();
   const { videoSets, fetchSets } = useVideoSetStore();
+  const { videos } = useVideoStore();
 
   const [freqMaps, setFreqMaps]   = useState<FreqMap[]>([]);
   const [wordList, setWordList]   = useState<{ text: string }[]>([]);
@@ -114,6 +117,8 @@ export default function LineGraphPage() {
 
   const [period, setPeriod]       = useState<Period>('range');
   const [dateIdx, setDateIdx]     = useState(0);
+
+  const [clickedPoint, setClickedPoint] = useState<ClickedPoint | null>(null);
 
   // Multi-word comparison (main word is selectedWord, up to 2 extras)
   const [compWords, setCompWords] = useState<WordLine[]>([]);
@@ -227,6 +232,26 @@ export default function LineGraphPage() {
       next.has(word) ? next.delete(word) : next.add(word);
       return next;
     });
+  };
+
+  const handleDotClick = (index: number, word: string, color: string) => {
+    const wordData = lineDataByWord[word];
+    if (!wordData) return;
+    let videoIDs: string[] = [];
+    let xLabel = '';
+    if (period === 'daily') {
+      videoIDs = wordData.byHour[dateIdx]?.[index]?.videoIDs || [];
+      xLabel = HOUR_LABELS[index];
+    } else if (period === 'weekly') {
+      videoIDs = wordData.byWeek[dateIdx]?.[index]?.videoIDs || [];
+      xLabel = DAY_LABELS[index];
+    } else {
+      const pt = wordData.byRange[index];
+      videoIDs = pt?.videoIDs || [];
+      xLabel = String(pt?.label || '');
+    }
+    if (videoIDs.length === 0) return;
+    setClickedPoint({ word, xLabel, videoIDs, color });
   };
 
   const periodLabel = period === 'daily' ? 'Hour' : period === 'weekly' ? 'Weekday' : 'Video Dates';
@@ -409,8 +434,25 @@ export default function LineGraphPage() {
                         name={word}
                         stroke={color}
                         strokeWidth={2.5}
-                        dot={{ r: 4, fill: color, strokeWidth: 2, stroke: 'white' }}
-                        activeDot={{ r: 6 }}
+                        dot={(props: any) => {
+                          const { cx, cy, index } = props;
+                          if (cx == null || cy == null) return <g key={index} />;
+                          const hasVideos = (period === 'daily'
+                            ? lineDataByWord[word]?.byHour[dateIdx]?.[index]?.videoIDs.length
+                            : period === 'weekly'
+                            ? lineDataByWord[word]?.byWeek[dateIdx]?.[index]?.videoIDs.length
+                            : lineDataByWord[word]?.byRange[index]?.videoIDs.length) ?? 0;
+                          return (
+                            <circle
+                              key={index}
+                              cx={cx} cy={cy} r={hasVideos ? 5 : 4}
+                              fill={color} stroke="white" strokeWidth={2}
+                              style={{ cursor: hasVideos ? 'pointer' : 'default' }}
+                              onClick={() => hasVideos && handleDotClick(index, word, color)}
+                            />
+                          );
+                        }}
+                        activeDot={{ r: 7, cursor: 'pointer', stroke: 'white', strokeWidth: 2 }}
                         connectNulls
                       />
                     ))}
@@ -425,6 +467,62 @@ export default function LineGraphPage() {
           </>
         )}
       </div>
+
+      {/* ── Video list drawer ── */}
+      {clickedPoint && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setClickedPoint(null)}
+            onKeyDown={e => e.key === 'Escape' && setClickedPoint(null)}
+            role="presentation"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dot-panel-title"
+            className="relative w-80 max-w-full bg-white h-full shadow-2xl flex flex-col"
+          >
+            <div className="px-4 py-4 border-b border-gray-100 shrink-0 flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: clickedPoint.color }} aria-hidden="true" />
+                  <h2 id="dot-panel-title" className="font-bold text-gray-800">"{clickedPoint.word}"</h2>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {clickedPoint.xLabel} · {clickedPoint.videoIDs.length} video{clickedPoint.videoIDs.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <button onClick={() => setClickedPoint(null)} className="text-gray-400 hover:text-gray-600 shrink-0" aria-label="Close">
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {clickedPoint.videoIDs.map(id => {
+                const video = videos.find(v => v._id === id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => navigate(`/videos/${id}`)}
+                    className="w-full text-left p-3 rounded-xl border border-gray-100 hover:border-mhmr-olive hover:bg-mhmr-olive/5 transition-colors flex items-start gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-mhmr-olive/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Video size={14} className="text-mhmr-olive" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{video?.title || 'Untitled'}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {video ? new Date(video.datetimeRecorded).toLocaleDateString() : id}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Compare Words Modal ── */}
       {showWordModal && (
