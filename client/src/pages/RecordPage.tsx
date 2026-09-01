@@ -1,12 +1,13 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle } from 'lucide-react';
+import { Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useAuthStore } from '../store/authStore';
 import { videosApi } from '../api/videos';
 import ProgressBar from '../components/common/ProgressBar';
 
 type RecordingState = 'idle' | 'preview' | 'recording' | 'recorded' | 'uploading' | 'saved';
+interface Devices { cameras: MediaDeviceInfo[]; mics: MediaDeviceInfo[]; speakers: MediaDeviceInfo[]; }
 
 export default function RecordPage() {
   const navigate = useNavigate();
@@ -18,19 +19,54 @@ export default function RecordPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const micFrameRef = useRef<number | null>(null);
 
   const [state, setState] = useState<RecordingState>('idle');
   const [blob, setBlob] = useState<Blob | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
-  const [audioEnabled, setAudioEnabled] = useState(true);
   const [title, setTitle] = useState('');
   const [savedVideoId, setSavedVideoId] = useState<string | null>(null);
   const [showTranscribePrompt, setShowTranscribePrompt] = useState(false);
   const [autoTranscribeStarted, setAutoTranscribeStarted] = useState(false);
   const [transcribeStatus, setTranscribeStatus] = useState<'running' | 'done' | 'error'>('running');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [devices, setDevices] = useState<Devices>({ cameras: [], mics: [], speakers: [] });
+  const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [selectedMicId, setSelectedMicId] = useState('');
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState('');
+  const [showDeviceSettings, setShowDeviceSettings] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
+
+  const stopMicMonitor = () => {
+    if (micFrameRef.current) cancelAnimationFrame(micFrameRef.current);
+    audioContextRef.current?.close();
+    audioContextRef.current = null;
+    setMicLevel(0);
+  };
+
+  const startMicMonitor = (stream: MediaStream) => {
+    stopMicMonitor();
+    try {
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        setMicLevel(Math.min(100, avg * 2.5));
+        micFrameRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch {}
+  };
 
   const runTranscription = (id: string) => {
     setAutoTranscribeStarted(true);
@@ -44,30 +80,64 @@ export default function RecordPage() {
     startPreview();
     return () => {
       streamRef.current?.getTracks().forEach(t => t.stop());
+      stopMicMonitor();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  const startPreview = async () => {
+  const startPreview = async (cameraId = selectedCameraId, micId = selectedMicId) => {
     setError('');
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    stopMicMonitor();
+
+    const isPortrait = window.innerHeight > window.innerWidth;
+    const videoConstraints: MediaTrackConstraints = cameraId
+      ? { deviceId: { exact: cameraId } }
+      : isPortrait ? { facingMode: 'user' } : { width: { ideal: 1280 }, height: { ideal: 720 } };
+
+    let videoTracks: MediaStreamTrack[] = [];
+    let audioTracks: MediaStreamTrack[] = [];
+    const errs: string[] = [];
+
     try {
-      const isPortrait = window.innerHeight > window.innerWidth;
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: isPortrait
-          ? { facingMode: 'user' }
-          : { width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: audioEnabled,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.muted = true;
-        videoRef.current.play();
-      }
-      setState('preview');
+      const vs = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+      videoTracks = vs.getVideoTracks();
     } catch {
-      setError('Camera and Microphone not detected');
+      errs.push('Camera');
     }
+
+    try {
+      const as = await navigator.mediaDevices.getUserMedia({ audio: micId ? { deviceId: { exact: micId } } : true });
+      audioTracks = as.getAudioTracks();
+    } catch {
+      errs.push('Microphone');
+    }
+
+    if (errs.length === 2) { setError('Camera and Microphone not detected'); return; }
+    if (errs.length === 1) setError(`${errs[0]} not detected`);
+
+    const stream = new MediaStream([...videoTracks, ...audioTracks]);
+    streamRef.current = stream;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.muted = true;
+      videoRef.current.play();
+    }
+
+    if (audioTracks.length > 0) startMicMonitor(new MediaStream(audioTracks));
+
+    // Enumerate devices now that permission is granted (labels are populated after first getUserMedia)
+    const all = await navigator.mediaDevices.enumerateDevices();
+    const cameras = all.filter(d => d.kind === 'videoinput');
+    const mics = all.filter(d => d.kind === 'audioinput');
+    const speakers = all.filter(d => d.kind === 'audiooutput');
+    setDevices({ cameras, mics, speakers });
+    if (!cameraId && cameras.length) setSelectedCameraId(c => c || cameras[0].deviceId);
+    if (!micId && mics.length) setSelectedMicId(m => m || mics[0].deviceId);
+    if (speakers.length) setSelectedSpeakerId(s => s || speakers[0].deviceId);
+
+    if (videoTracks.length > 0) setState('preview');
   };
 
   const startRecording = () => {
@@ -140,6 +210,23 @@ export default function RecordPage() {
     setShowTranscribePrompt(false);
     if (enabled && savedVideoId) {
       runTranscription(savedVideoId);
+    }
+  };
+
+  const handleCameraChange = (id: string) => {
+    setSelectedCameraId(id);
+    if (state === 'preview') startPreview(id, selectedMicId);
+  };
+
+  const handleMicChange = (id: string) => {
+    setSelectedMicId(id);
+    if (state === 'preview') startPreview(selectedCameraId, id);
+  };
+
+  const handleSpeakerChange = async (id: string) => {
+    setSelectedSpeakerId(id);
+    if (videoRef.current && 'setSinkId' in videoRef.current) {
+      await (videoRef.current as any).setSinkId(id);
     }
   };
 
@@ -219,6 +306,81 @@ export default function RecordPage() {
                 placeholder={new Date().toLocaleString()}
                 className="form-input"
               />
+            </div>
+          )}
+
+          {/* Device settings — shown during preview only */}
+          {state === 'preview' && (
+            <div>
+              <button
+                onClick={() => setShowDeviceSettings(s => !s)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <Settings size={15} aria-hidden="true" />
+                Device Settings
+                {showDeviceSettings ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+
+              {showDeviceSettings && (
+                <div className="card mt-2 space-y-3">
+                  {/* Camera */}
+                  {devices.cameras.length > 0 && (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Camera</label>
+                      <select
+                        value={selectedCameraId}
+                        onChange={e => handleCameraChange(e.target.value)}
+                        className="form-input text-sm"
+                      >
+                        {devices.cameras.map(d => (
+                          <option key={d.deviceId} value={d.deviceId}>{d.label || `Camera ${d.deviceId.slice(0, 6)}`}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Microphone + level */}
+                  {devices.mics.length > 0 && (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Microphone</label>
+                      <select
+                        value={selectedMicId}
+                        onChange={e => handleMicChange(e.target.value)}
+                        className="form-input text-sm"
+                      >
+                        {devices.mics.map(d => (
+                          <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 6)}`}</option>
+                        ))}
+                      </select>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="text-xs text-gray-400 shrink-0">Level</span>
+                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-75"
+                            style={{ width: `${micLevel}%`, backgroundColor: micLevel > 80 ? '#e65100' : micLevel > 40 ? '#2e7d32' : '#616161' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Speaker */}
+                  {'setSinkId' in HTMLMediaElement.prototype && devices.speakers.length > 0 && (
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Speaker</label>
+                      <select
+                        value={selectedSpeakerId}
+                        onChange={e => handleSpeakerChange(e.target.value)}
+                        className="form-input text-sm"
+                      >
+                        {devices.speakers.map(d => (
+                          <option key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${d.deviceId.slice(0, 6)}`}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
