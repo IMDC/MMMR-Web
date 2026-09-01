@@ -78,7 +78,17 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
   startTranscription: async (videoId) => {
     get().setTranscriptionProgress(videoId, { stage: 'transcribing', progress: 0, message: 'Transcribing...' });
     try {
-      await videosApi.transcribe(videoId);
+      // Use SSE endpoint instead of blocking POST — works through Traefik/nginx in production
+      await new Promise<void>((resolve, reject) => {
+        const src = new EventSource(`/api/videos/${videoId}/transcription-status`);
+        src.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          get().setTranscriptionProgress(videoId, { stage: data.stage, progress: data.progress, message: data.message });
+          if (data.stage === 'complete') { src.close(); resolve(); }
+          else if (data.stage === 'error') { src.close(); reject(new Error(data.message)); }
+        };
+        src.onerror = () => { src.close(); reject(new Error('Transcription connection lost')); };
+      });
       await get().refreshVideo(videoId);
       get().setTranscriptionProgress(videoId, null);
     } catch (err) {
