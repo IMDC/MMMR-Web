@@ -25,9 +25,9 @@ export default function OnboardingModal({ onComplete }: Props) {
   const BackButton = ({ to }: { to: 1 | 2 }) => (
     <button
       onClick={() => setStep(to)}
-      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-4"
+      className="flex items-center gap-1.5 text-sm font-semibold text-mhmr-olive hover:bg-mhmr-olive/10 px-3 py-1.5 rounded-lg transition-colors mb-4 -ml-2"
     >
-      <ArrowLeft size={15} aria-hidden="true" /> Back
+      <ArrowLeft size={16} aria-hidden="true" /> Back
     </button>
   );
 
