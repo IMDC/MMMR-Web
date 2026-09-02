@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mic, Sparkles, Zap, ZapOff } from 'lucide-react';
+import { Sparkles, Zap, ZapOff, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 interface Props {
@@ -21,6 +21,15 @@ export default function OnboardingModal({ onComplete }: Props) {
     setAutoTranscribe(auto);
     setStep(3);
   };
+
+  const BackButton = ({ to }: { to: 1 | 2 }) => (
+    <button
+      onClick={() => setStep(to)}
+      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-4"
+    >
+      <ArrowLeft size={15} aria-hidden="true" /> Back
+    </button>
+  );
 
   const handleConsent = async (agreed: boolean) => {
     await updatePreferences({
@@ -88,6 +97,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         {/* Step 2 — Transcription preference */}
         {step === 2 && (
           <div className="p-6">
+            <BackButton to={1} />
             <h2 id="onboarding-title" className="text-lg font-bold text-gray-800 mb-1">
               Transcription
             </h2>
@@ -131,6 +141,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         {/* Step 3 — AI consent */}
         {step === 3 && (
           <div className="p-6">
+            <BackButton to={2} />
             <h2 id="onboarding-title" className="text-lg font-bold text-gray-800 mb-1">
               Your data belongs to you
             </h2>
@@ -138,19 +149,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               This app has optional AI features that send data to OpenAI. Here's exactly what they do:
             </p>
 
-            <div className="space-y-3 mb-4">
-              <div className="flex gap-3 p-3 rounded-xl bg-blue-50">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                  <Mic size={15} className="text-blue-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Transcription (Whisper)</p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                    Your video audio is sent to OpenAI to convert speech to text. Audio is not stored permanently by OpenAI.
-                  </p>
-                </div>
-              </div>
-
+            <div className="mb-4">
               <div className="flex gap-3 p-3 rounded-xl bg-purple-50">
                 <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
                   <Sparkles size={15} className="text-purple-600" aria-hidden="true" />
