@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const updatePreferences = useAuthStore(s => s.updatePreferences);
 
   const [autoTranscribe, setAutoTranscribe] = useState<boolean | null>(user?.autoTranscribe ?? null);
-  const [aiEnabled, setAiEnabled] = useState(user?.aiConsent === 'agreed');
+  const [aiConsent, setAiConsent] = useState<'agreed' | 'disagreed' | null>(user?.aiConsent ?? null);
   const [showAiConfirm, setShowAiConfirm] = useState(false);
   const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(user?.summaryFormat ?? 'both');
 
@@ -33,17 +33,8 @@ export default function SettingsPage() {
     updatePreferences({ autoTranscribe: enabled });
   };
 
-  const handleAiToggle = () => {
-    if (aiEnabled) {
-      setAiEnabled(false);
-      updatePreferences({ aiConsent: 'disagreed' });
-    } else {
-      setShowAiConfirm(true);
-    }
-  };
-
   const confirmAiEnable = () => {
-    setAiEnabled(true);
+    setAiConsent('agreed');
     setShowAiConfirm(false);
     updatePreferences({ aiConsent: 'agreed' });
   };
@@ -127,29 +118,33 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-2 gap-2 mb-2">
             <button
-              onClick={() => { if (!aiEnabled) setShowAiConfirm(true); }}
+              onClick={() => { if (aiConsent !== 'agreed') setShowAiConfirm(true); }}
               className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-colors text-center
-                ${aiEnabled ? 'border-mhmr-olive bg-mhmr-olive/10' : 'border-gray-100 hover:border-gray-300'}`}
-              aria-pressed={aiEnabled}
+                ${aiConsent === 'agreed' ? 'border-mhmr-olive bg-mhmr-olive/10' : 'border-gray-100 hover:border-gray-300'}`}
+              aria-pressed={aiConsent === 'agreed'}
             >
-              <Sparkles size={18} className={aiEnabled ? 'text-mhmr-olive' : 'text-gray-400'} />
+              <Sparkles size={18} className={aiConsent === 'agreed' ? 'text-mhmr-olive' : 'text-gray-400'} />
               <p className="font-semibold text-gray-800 text-xs">Enabled</p>
               <p className="text-xs text-gray-400 leading-tight">AI summaries &amp; reports</p>
             </button>
 
             <button
-              onClick={() => { if (aiEnabled) handleAiToggle(); }}
+              onClick={() => { if (aiConsent !== 'disagreed') { setAiConsent('disagreed'); updatePreferences({ aiConsent: 'disagreed' }); } }}
               className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-colors text-center
-                ${!aiEnabled ? 'border-gray-400 bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}
-              aria-pressed={!aiEnabled}
+                ${aiConsent === 'disagreed' ? 'border-gray-400 bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}
+              aria-pressed={aiConsent === 'disagreed'}
             >
-              <Sparkles size={18} className={!aiEnabled ? 'text-gray-600' : 'text-gray-400'} />
+              <Sparkles size={18} className={aiConsent === 'disagreed' ? 'text-gray-600' : 'text-gray-400'} />
               <p className="font-semibold text-gray-800 text-xs">Disabled</p>
               <p className="text-xs text-gray-400 leading-tight">No AI summaries</p>
             </button>
           </div>
 
-          {aiEnabled && (
+          {aiConsent === null && (
+            <p className="text-xs text-gray-400 mt-1 mb-2">No preference set yet.</p>
+          )}
+
+          {aiConsent === 'agreed' && (
             <div className="border-t border-gray-100 pt-2">
               <p className="text-xs text-gray-500 mb-1.5">Video card summary format:</p>
               <div className="grid grid-cols-3 gap-2">
