@@ -29,15 +29,12 @@ export default function PainScalePicker({ value, numericPainScale, onChange }: P
 
   const [scale, setScale] = useState(numericPainScale);
   const [customInput, setCustomInput] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const cycleSeverity = (id: string) => {
-    const cycle = ['none', 'mild', 'moderate', 'severe'];
-    const updated = items.map(item => {
-      if (item.id !== id) return item;
-      const next = cycle[(cycle.indexOf(item.severity_level) + 1) % cycle.length];
-      return { ...item, severity_level: next };
-    });
+  const setSeverity = (id: string, severity: string) => {
+    const updated = items.map(item => item.id === id ? { ...item, severity_level: severity } : item);
     setItems(updated);
+    setExpandedId(null);
     onChange(updated.map(i => JSON.stringify(i)), scale);
   };
 
@@ -101,20 +98,44 @@ export default function PainScalePicker({ value, numericPainScale, onChange }: P
 
       {/* McGill descriptors */}
       <div>
-        <p className="text-xs text-gray-500 mb-2">Pain descriptors (tap to cycle: none → mild → moderate → severe)</p>
+        <p className="text-xs text-gray-500 mb-2">Pain descriptors — tap a descriptor to set its severity</p>
         <div className="grid grid-cols-2 gap-2 mb-3">
           {items.map(item => (
-            <button
-              key={item.id}
-              onClick={() => cycleSeverity(item.id)}
-              className={`text-xs py-1.5 px-3 rounded-lg border-2 font-medium text-left transition-all
-                ${severityColors[item.severity_level] || severityColors.none}`}
-            >
-              <span>{item.name}</span>
-              {item.severity_level !== 'none' && (
-                <span className="ml-1 text-[10px] opacity-70 capitalize">({item.severity_level})</span>
+            <div key={item.id} className={expandedId === item.id ? 'col-span-2' : ''}>
+              {/* Descriptor button */}
+              <button
+                onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                className={`w-full text-xs py-1.5 px-3 rounded-lg border-2 font-medium text-left transition-all
+                  ${severityColors[item.severity_level] || severityColors.none}`}
+              >
+                <span>{item.name}</span>
+                {item.severity_level !== 'none' && (
+                  <span className="ml-1 text-[10px] opacity-70 capitalize">({item.severity_level})</span>
+                )}
+              </button>
+
+              {/* Severity options — shown when expanded */}
+              {expandedId === item.id && (
+                <div className="flex gap-1.5 mt-1.5">
+                  {(['none', 'mild', 'moderate', 'severe'] as const).map(level => (
+                    <button
+                      key={level}
+                      onClick={() => setSeverity(item.id, level)}
+                      className={`flex-1 text-[11px] font-semibold py-1 rounded-lg border-2 transition-all capitalize
+                        ${item.severity_level === level
+                          ? level === 'none' ? 'border-gray-400 bg-gray-100 text-gray-700'
+                            : level === 'mild' ? 'border-orange-400 bg-orange-100 text-orange-800'
+                            : level === 'moderate' ? 'border-orange-500 bg-orange-200 text-orange-900'
+                            : 'border-red-400 bg-red-100 text-red-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                        }`}
+                    >
+                      {level === 'none' ? 'Clear' : level}
+                    </button>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
           ))}
         </div>
         <div className="flex gap-2">
