@@ -1,6 +1,6 @@
 /**
- * Resets preferences for participant4 and participant5 only.
- * Does NOT touch participants 1–3.
+ * Resets preferences for all 5 participants.
+ * Only touches aiConsent, autoTranscribe, summaryFormat — videos and analysis are NOT affected.
  *
  * Run from the backend container terminal:
  *   npx tsx src/scripts/resetParticipants4and5.ts
@@ -14,7 +14,7 @@ async function run() {
   console.log('Connected to', config.mongoUri);
 
   const result = await User.updateMany(
-    { username: { $in: ['participant4', 'participant5'] } },
+    { username: { $in: ['participant1', 'participant2', 'participant3', 'participant4', 'participant5'] } },
     { $set: { aiConsent: null, autoTranscribe: null, summaryFormat: 'both' } },
   );
 
