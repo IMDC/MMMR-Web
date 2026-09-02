@@ -66,7 +66,17 @@ export default function PainScalePicker({ value, numericPainScale, onChange }: P
       {/* Numeric scale */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <label htmlFor="pain-numeric-scale" className="text-xs text-gray-500">Overall Pain Level</label>
+          <div>
+            <label htmlFor="pain-numeric-scale" className="text-xs text-gray-500">Overall Pain Level — McGill Pain Scale</label>
+            <a
+              href="https://www.mcgill.ca/painresearch/research/mcgill-pain-questionnaire"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-xs text-mhmr-olive underline hover:opacity-80 transition-opacity"
+            >
+              Learn more
+            </a>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-gray-800" aria-live="polite">{scale.toFixed(1)}</span>
             {category && (
@@ -98,7 +108,7 @@ export default function PainScalePicker({ value, numericPainScale, onChange }: P
 
       {/* McGill descriptors */}
       <div>
-        <p className="text-xs text-gray-500 mb-2">Pain descriptors — tap a descriptor to set its severity</p>
+        <p className="text-xs text-gray-500 mb-2">McGill pain descriptors — tap a descriptor to set its severity</p>
         <div className="grid grid-cols-2 gap-2 mb-3">
           {items.map(item => (
             <div key={item.id} className={expandedId === item.id ? 'col-span-2' : ''}>
