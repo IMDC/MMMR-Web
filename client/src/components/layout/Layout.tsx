@@ -22,7 +22,7 @@ export default function Layout() {
 
   useEffect(() => {
     if (!user) return;
-    if (!user.displayName) {
+    if (user.aiConsent === null) {
       setShowOnboarding(true);
     }
   }, [user?.id]);
