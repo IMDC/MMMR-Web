@@ -119,7 +119,7 @@ export default function DataAnalysisPage() {
   };
 
   const handleConsentYesForAll = async () => {
-    updatePreferences({ aiConsent: 'agreed' });
+    updatePreferences({ aiConsent: 'agreed', autoTranscribe: true });
     setShowConsentModal(false);
     await runAnalysisAndNavigate();
   };
