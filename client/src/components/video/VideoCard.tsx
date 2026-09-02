@@ -221,10 +221,10 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               {!selectable && !readOnly && (
                 <button
                   onClick={startEditing}
-                  className="shrink-0 mt-0.5 text-mhmr-olive hover:text-mhmr-olive-dark transition-colors"
+                  className="shrink-0 mt-0.5 text-mhmr-olive hover:text-mhmr-olive-dark transition-colors p-1"
                   aria-label="Rename video"
                 >
-                  <Pencil size={14} strokeWidth={2.5} />
+                  <Pencil size={16} strokeWidth={2.5} />
                 </button>
               )}
             </div>
@@ -258,14 +258,17 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               type="button"
               onClick={e => { e.stopPropagation(); setPickerFormat(summaryFormat); setShowSummaryPicker(true); }}
               aria-label="Customize AI summary display format"
-              className="w-full text-left mb-3 px-2 py-1.5 rounded-xl border border-transparent hover:border-mhmr-olive/30 hover:bg-mhmr-olive/5 transition-colors group/summary"
+              className="w-full text-left mb-3 px-2 py-2 rounded-xl border border-transparent hover:border-mhmr-olive/30 hover:bg-mhmr-olive/5 transition-colors group/summary"
             >
               <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1">
-                  <Sparkles size={10} className="text-gray-400" aria-hidden="true" />
-                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">AI Summary</span>
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-mhmr-olive" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Summary</span>
                 </div>
-                <SlidersHorizontal size={11} className="text-gray-300 group-hover/summary:text-mhmr-olive transition-colors" aria-hidden="true" />
+                <div className="flex items-center gap-1 text-xs text-gray-400 group-hover/summary:text-mhmr-olive transition-colors">
+                  <SlidersHorizontal size={13} aria-hidden="true" />
+                  <span className="text-[11px]">Edit</span>
+                </div>
               </div>
               {(summaryFormat === 'sentence' || summaryFormat === 'both') && video.videoSummary && (
                 <p className="text-xs text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
@@ -343,9 +346,9 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             {/* Annotate */}
             <button
               onClick={e => { e.stopPropagation(); navigate(`/videos/${video._id}`); }}
-              className="flex items-center gap-1.5 text-xs text-mhmr-olive font-medium hover:underline"
+              className="flex items-center gap-1.5 text-sm text-mhmr-olive font-semibold hover:underline"
             >
-              <Tag size={13} />
+              <Tag size={15} />
               Markup
             </button>
 
@@ -353,9 +356,9 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               {/* Add to set */}
               <button
                 onClick={openSetModal}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-mhmr-olive transition-colors font-medium"
+                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-mhmr-olive transition-colors font-semibold"
               >
-                <Plus size={13} aria-hidden="true" />
+                <Plus size={15} aria-hidden="true" />
                 Add to set
               </button>
 
@@ -363,10 +366,10 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               <button
                 onClick={e => { e.stopPropagation(); setShowDeleteConfirm(true); }}
                 disabled={deleting}
-                className="text-gray-400 hover:text-red-400 transition-colors"
+                className="text-gray-400 hover:text-red-400 transition-colors p-1"
                 aria-label="Delete video"
               >
-                {deleting ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                {deleting ? <Loader2 size={20} className="animate-spin" /> : <Trash2 size={20} />}
               </button>
             </div>
           </div>
