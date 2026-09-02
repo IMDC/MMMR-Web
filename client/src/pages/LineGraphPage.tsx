@@ -444,8 +444,8 @@ export default function LineGraphPage() {
                         name={word}
                         stroke={color}
                         strokeWidth={2.5}
-                        dot={{ r: 5, fill: color, strokeWidth: 2, stroke: 'white' }}
-                        activeDot={{ r: 8, stroke: 'white', strokeWidth: 2 }}
+                        dot={{ r: 5, fill: color, strokeWidth: 2, stroke: '#ffffff' }}
+                        activeDot={{ r: 8, stroke: '#ffffff', strokeWidth: 2 }}
                         connectNulls
                       />
                     ))}
