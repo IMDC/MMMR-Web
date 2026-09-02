@@ -36,8 +36,8 @@ export default function VideoSetsPage() {
         title="Video Sets"
         subtitle={`${videoSets.length} set${videoSets.length !== 1 ? 's' : ''}`}
         actions={
-          <button onClick={() => setShowCreate(true)} className="text-white/80 hover:text-white">
-            <Plus size={22} />
+          <button onClick={() => setShowCreate(true)} className="text-sm font-semibold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+            New Video Set
           </button>
         }
       />
