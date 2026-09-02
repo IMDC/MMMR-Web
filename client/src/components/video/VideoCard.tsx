@@ -139,13 +139,13 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
 
   // Pain scale
   const painLevel = video.numericPainScale ?? 0;
-  const painCategory = painLevel <= 0
+  const painCategory = painLevel === 0
     ? null
-    : painLevel <= 1.5
-    ? { label: 'Mild', style: 'bg-amber-50 text-amber-600' }
-    : painLevel <= 2.5
+    : painLevel <= 3
+    ? { label: 'Mild',     style: 'bg-blue-50 text-blue-600'     }
+    : painLevel <= 6
     ? { label: 'Moderate', style: 'bg-orange-50 text-orange-600' }
-    : { label: 'Severe', style: 'bg-red-50 text-red-600' };
+    : { label: 'Severe',   style: 'bg-red-50 text-red-600'       };
 
   const hasMarkups = emotionEmojis.length > 0 || painCategory !== null;
 
@@ -334,7 +334,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             )}
             {painCategory && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${painCategory.style}`}>
-                Pain {painLevel.toFixed(1)} · {painCategory.label}
+                Pain {painLevel} · {painCategory.label}
               </span>
             )}
           </div>

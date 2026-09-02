@@ -24,20 +24,21 @@ export function scoreToSentiment(score: number): SentimentType {
   return 'Very Positive';
 }
 
+// Numerical Rating Scale (NRS): 0=none, 1-3=mild, 4-6=moderate, 7-10=severe
 export function getPainSentiment(painValue: number): string {
-  if (painValue < 0.5) return 'no pain';
-  if (painValue < 1.5) return 'mild pain';
-  if (painValue < 2.5) return 'moderate pain';
+  if (painValue === 0) return 'no pain';
+  if (painValue <= 3) return 'mild pain';
+  if (painValue <= 6) return 'moderate pain';
   return 'severe pain';
 }
 
 export function getPainBias(painSentiment: string): number {
   switch (painSentiment?.toLowerCase()) {
-    case 'severe pain': return -0.8;
+    case 'severe pain':   return -0.8;
     case 'moderate pain': return -0.5;
-    case 'mild pain': return -0.2;
-    case 'no pain': return 0.2;
-    default: return 0;
+    case 'mild pain':     return -0.2;
+    case 'no pain':       return 0;
+    default:              return 0;
   }
 }
 
