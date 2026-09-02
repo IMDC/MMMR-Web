@@ -35,8 +35,9 @@ export default function SettingsPage() {
 
   const confirmAiEnable = () => {
     setAiConsent('agreed');
+    setAutoTranscribe(true);
     setShowAiConfirm(false);
-    updatePreferences({ aiConsent: 'agreed' });
+    updatePreferences({ aiConsent: 'agreed', autoTranscribe: true });
   };
 
   return (

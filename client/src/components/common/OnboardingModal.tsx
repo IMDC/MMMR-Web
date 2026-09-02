@@ -17,7 +17,11 @@ export default function OnboardingModal({ onComplete }: Props) {
   };
 
   const handleConsent = async (agreed: boolean) => {
-    await updatePreferences({ displayName: displayName.trim(), aiConsent: agreed ? 'agreed' : 'disagreed' });
+    await updatePreferences({
+      displayName: displayName.trim(),
+      aiConsent: agreed ? 'agreed' : 'disagreed',
+      ...(agreed && { autoTranscribe: true }),
+    });
     onComplete();
   };
 
