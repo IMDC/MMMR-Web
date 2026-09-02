@@ -116,23 +116,32 @@ export default function PainScalePicker({ value, numericPainScale, onChange }: P
 
               {/* Severity options — shown when expanded */}
               {expandedId === item.id && (
-                <div className="flex gap-1.5 mt-1.5">
-                  {(['none', 'mild', 'moderate', 'severe'] as const).map(level => (
-                    <button
-                      key={level}
-                      onClick={() => setSeverity(item.id, level)}
-                      className={`flex-1 text-[11px] font-semibold py-1 rounded-lg border-2 transition-all capitalize
-                        ${item.severity_level === level
-                          ? level === 'none' ? 'border-gray-400 bg-gray-100 text-gray-700'
-                            : level === 'mild' ? 'border-orange-400 bg-orange-100 text-orange-800'
-                            : level === 'moderate' ? 'border-orange-500 bg-orange-200 text-orange-900'
-                            : 'border-red-400 bg-red-100 text-red-700'
-                          : 'border-gray-200 text-gray-500 hover:border-gray-400'
-                        }`}
-                    >
-                      {level === 'none' ? 'Clear' : level}
-                    </button>
-                  ))}
+                <div className="mt-2 rounded-xl p-2.5" style={{ background: '#f3f4f6', border: '1px solid #e5e7eb' }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide mb-2" style={{ color: '#9ca3af' }}>Set severity</p>
+                  <div className="flex gap-1.5">
+                    {([
+                      { level: 'none',     label: 'None',     bg: '#6b7280', color: '#ffffff' },
+                      { level: 'mild',     label: 'Mild',     bg: '#3b82f6', color: '#ffffff' },
+                      { level: 'moderate', label: 'Moderate', bg: '#f97316', color: '#ffffff' },
+                      { level: 'severe',   label: 'Severe',   bg: '#7c3aed', color: '#ffffff' },
+                    ] as const).map(({ level, label, bg, color }) => (
+                      <button
+                        key={level}
+                        onClick={() => setSeverity(item.id, level)}
+                        style={{
+                          backgroundColor: bg,
+                          color,
+                          outline: item.severity_level === level ? `3px solid ${bg}` : 'none',
+                          outlineOffset: '2px',
+                          transform: item.severity_level === level ? 'scale(1.05)' : 'scale(1)',
+                          opacity: item.severity_level === level ? 1 : 0.6,
+                        }}
+                        className="flex-1 text-[11px] font-bold py-1.5 rounded-lg transition-all hover:opacity-100"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
