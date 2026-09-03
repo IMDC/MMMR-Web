@@ -260,7 +260,7 @@ export default function LineGraphPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-mhmr-olive px-4 py-3 flex items-center gap-3 shadow-sm shrink-0">
-        <button onClick={() => navigate('/analysis')} className="text-white/80 hover:text-white" aria-label="Back to Data Analysis">
+        <button onClick={() => navigate('/analysis')} className="text-white/80 hover:text-white" aria-label="Back to Reports">
           <ArrowLeft size={22} aria-hidden="true" />
         </button>
         <h1 className="text-white font-bold flex-1 truncate">
