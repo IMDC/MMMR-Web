@@ -10,7 +10,7 @@ const navItems = [
   { to: '/', icon: Home, label: 'Home', exact: true },
   { to: '/videos', icon: Video, label: 'Manage Videos' },
   { to: '/videosets', icon: Clapperboard, label: 'Video Sets' },
-  { to: '/analysis', icon: BarChart2, label: 'Data Analysis' },
+  { to: '/analysis', icon: BarChart2, label: 'Reports' },
   // { to: '/sharing', icon: Share2, label: 'Sharing' },
 ];
 

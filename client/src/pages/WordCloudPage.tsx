@@ -182,7 +182,7 @@ export default function WordCloudPage() {
         <button
           onClick={() => navigate('/analysis')}
           className="text-white/80 hover:text-white"
-          aria-label="Back to Data Analysis"
+          aria-label="Back to Reports"
         >
           <ArrowLeft size={22} aria-hidden="true" />
         </button>

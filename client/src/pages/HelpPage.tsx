@@ -33,7 +33,7 @@ const sections = [
   },
   {
     icon: BarChart2,
-    title: 'Data Analysis',
+    title: 'Reports',
     color: 'bg-green-50 text-green-600',
     faqs: [
       {
