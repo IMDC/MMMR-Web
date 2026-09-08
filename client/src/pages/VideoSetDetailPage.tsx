@@ -67,7 +67,7 @@ export default function VideoSetDetailPage() {
           className="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5"
         >
           <BarChart2 size={16} />
-          Analyze
+          View Reports
         </button>
       </div>
 
@@ -147,14 +147,15 @@ export default function VideoSetDetailPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Videos in set */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="section-title mb-0">Videos in Set</h2>
+            <h2 className="section-title mb-3">Videos in Set</h2>
+
+            <div className="flex justify-center mb-4">
               <button
                 onClick={() => setAddMode(true)}
-                className="text-xs text-mhmr-olive font-medium flex items-center gap-1 hover:underline"
+                className="flex items-center gap-1.5 btn-primary text-sm"
               >
-                <Plus size={14} />
-                Add videos
+                <Plus size={15} aria-hidden="true" />
+                Add Videos
               </button>
             </div>
 

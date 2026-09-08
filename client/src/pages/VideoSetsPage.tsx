@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, ChevronRight, Trash2, Video, Clapperboard } from 'lucide-react';
+import { Plus, ChevronRight, Trash2, Video, Clapperboard, Info, Pencil } from 'lucide-react';
 import { useVideoSetStore } from '../store/videoSetStore';
 import Header from '../components/layout/Header';
 import Loader from '../components/common/Loader';
@@ -9,11 +9,14 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function VideoSetsPage() {
   const navigate = useNavigate();
-  const { videoSets, fetchSets, createSet, deleteSet, isLoading } = useVideoSetStore();
+  const { videoSets, fetchSets, createSet, deleteSet, updateSet, isLoading } = useVideoSetStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   useEffect(() => { fetchSets(); }, []);
 
@@ -30,27 +33,52 @@ export default function VideoSetsPage() {
     }
   };
 
+  const openRename = (e: React.MouseEvent, id: string, currentName: string) => {
+    e.stopPropagation();
+    setEditTarget(id);
+    setEditName(currentName);
+  };
+
+  const handleRename = async () => {
+    if (!editTarget || !editName.trim()) return;
+    setRenaming(true);
+    try {
+      await updateSet(editTarget, { name: editName.trim() });
+      setEditTarget(null);
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <Header
         title="Video Sets"
         subtitle={`${videoSets.length} set${videoSets.length !== 1 ? 's' : ''}`}
-        actions={
-          <button onClick={() => setShowCreate(true)} className="text-sm font-semibold text-white/90 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-            New Video Set
-          </button>
-        }
       />
 
       <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm text-blue-800">
+          <Info size={16} className="shrink-0 mt-0.5 text-blue-500" aria-hidden="true" />
+          <p>Organize your videos into sets around common themes. Video sets are required to generate reports and AI analysis.</p>
+        </div>
+
+        <div className="flex justify-center mb-4">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 btn-primary"
+          >
+            
+            New Video Set
+          </button>
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader /></div>
         ) : videoSets.length === 0 ? (
-          <div className="text-center py-16">
-            <Clapperboard size={48} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 mb-2">No video sets yet</p>
-            <p className="text-sm text-gray-400 mb-5">Create a set to group related videos for analysis</p>
-            <button onClick={() => setShowCreate(true)} className="btn-primary">Create Video Set</button>
+          <div className="text-center py-10">
+            <Clapperboard size={40} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">No video sets yet — create one above.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -78,15 +106,22 @@ export default function VideoSetsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      onClick={e => openRename(e, set._id, set.name)}
+                      className="text-gray-400 hover:text-mhmr-olive transition-colors p-1"
+                      aria-label={`Rename set ${set.name}`}
+                    >
+                      <Pencil size={22} aria-hidden="true" />
+                    </button>
                     <button
                       onClick={e => { e.stopPropagation(); setDeleteTarget(set._id); }}
-                      className="text-gray-200 hover:text-red-400 transition-colors"
+                      className="text-gray-400 hover:text-red-400 transition-colors p-1"
                       aria-label={`Delete set ${set.name}`}
                     >
-                      <Trash2 size={16} aria-hidden="true" />
+                      <Trash2 size={22} aria-hidden="true" />
                     </button>
-                    <ChevronRight size={18} className="text-gray-300" />
+                    <ChevronRight size={20} className="text-gray-300" />
                   </div>
                 </div>
               </div>
@@ -119,6 +154,39 @@ export default function VideoSetsPage() {
               <button onClick={() => setShowCreate(false)} className="btn-secondary flex-1">Cancel</button>
               <button onClick={handleCreate} disabled={!newName.trim() || creating} className="btn-primary flex-1">
                 {creating ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename modal */}
+      {editTarget && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+          role="presentation"
+          onKeyDown={e => e.key === 'Escape' && setEditTarget(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rename-set-title"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
+          >
+            <h2 id="rename-set-title" className="font-bold text-gray-800 text-lg mb-4">Rename Video Set</h2>
+            <input
+              type="text"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              className="form-input mb-4"
+              onKeyDown={e => e.key === 'Enter' && handleRename()}
+              autoFocus
+              aria-label="New set name"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setEditTarget(null)} className="btn-secondary flex-1">Cancel</button>
+              <button onClick={handleRename} disabled={!editName.trim() || renaming} className="btn-primary flex-1">
+                {renaming ? 'Saving...' : 'Save'}
               </button>
             </div>
           </div>
