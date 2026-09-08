@@ -41,7 +41,7 @@ export default function TopNav() {
   const displayLabel = user?.displayName || user?.username;
 
   return (
-    <nav className="hidden lg:flex items-center h-14 bg-mhmr-olive px-5 gap-1 shrink-0 shadow-sm z-20">
+    <nav className="hidden lg:flex items-center h-14 bg-mhmr-olive px-5 gap-1 shrink-0 z-20">
       {/* Logo — left */}
       <div className="flex items-center gap-2.5 shrink-0">
         <img src="/roundLogo.png" alt="MHMR Logo" className="h-8 w-8 object-contain" />
