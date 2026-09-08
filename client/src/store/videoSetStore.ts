@@ -72,8 +72,13 @@ export const useVideoSetStore = create<VideoSetStore>((set, get) => ({
 
   refreshSet: async (id) => {
     const updated = await videoSetsApi.get(id);
-    set(state => ({
-      videoSets: state.videoSets.map(s => s._id === id ? updated : s),
-    }));
+    set(state => {
+      const exists = state.videoSets.some(s => s._id === id);
+      return {
+        videoSets: exists
+          ? state.videoSets.map(s => s._id === id ? updated : s)
+          : [...state.videoSets, updated],
+      };
+    });
   },
 }));
