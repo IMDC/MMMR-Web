@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, X, Check, Loader2, Camera, Clapperboard } from 'lucide-react';
+import { Search, Plus, X, Check, Loader2, Camera, Clapperboard, Info } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
 import { useVideoSetStore } from '../store/videoSetStore';
 import Header from '../components/layout/Header';
@@ -179,6 +179,23 @@ export default function ManageVideosPage() {
             </button>
           </div>
         </div>
+
+        {/* Tip: videos not yet in a set */}
+        {videos.length > 0 && videos.some(v => !videoIdsInSets.has(v._id)) && (
+          <div className="flex items-start gap-2.5 mx-4 mt-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-800">
+            <Info size={16} className="shrink-0 mt-0.5 text-blue-500" aria-hidden="true" />
+            <p>
+              You have videos not yet in a set. Group related videos into{' '}
+              <button
+                onClick={() => navigate('/videosets')}
+                className="font-semibold underline underline-offset-2 hover:text-blue-900"
+              >
+                Video Sets
+              </button>{' '}
+              to organize them and generate reports.
+            </p>
+          </div>
+        )}
 
         {/* Video grid */}
         <div className="p-4">
