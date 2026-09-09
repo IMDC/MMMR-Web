@@ -40,13 +40,18 @@ const analysisCards = [
 
 export default function DataAnalysisPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { videoSets, fetchSets } = useVideoSetStore();
   const { videos, fetchVideos } = useVideoStore();
   const { analyzeVideoSet, clearCache } = useAnalysisStore();
   const user = useAuthStore(s => s.user);
   const updatePreferences = useAuthStore(s => s.updatePreferences);
   const [selectedSetId, setSelectedSetId] = useState(searchParams.get('setId') || '');
+
+  const selectSet = (id: string) => {
+    setSelectedSetId(id);
+    setSearchParams({ setId: id }, { replace: true });
+  };
 
   const aiGlobalEnabled = user?.aiConsent === 'agreed';
 
@@ -61,7 +66,7 @@ export default function DataAnalysisPage() {
 
   useEffect(() => {
     if (!selectedSetId && videoSets.length > 0) {
-      setSelectedSetId(videoSets[0]._id);
+      selectSet(videoSets[0]._id);
     }
   }, [videoSets]);
 
@@ -138,7 +143,7 @@ export default function DataAnalysisPage() {
             <select
               id="set-select"
               value={selectedSetId}
-              onChange={e => setSelectedSetId(e.target.value)}
+              onChange={e => selectSet(e.target.value)}
               className="form-input"
             >
               {videoSets.map(s => (

@@ -102,7 +102,7 @@ export default function BarGraphPage() {
       {/* Header */}
       <div className="bg-mhmr-olive px-4 py-3 flex items-center gap-3 shadow-sm shrink-0">
         <button
-          onClick={() => navigate('/analysis')}
+          onClick={() => navigate(`/analysis?setId=${setId}`)}
           className="text-white/80 hover:text-white"
           aria-label="Back to Reports"
         >
