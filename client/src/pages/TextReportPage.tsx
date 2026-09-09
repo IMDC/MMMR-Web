@@ -109,7 +109,7 @@ export default function TextReportPage() {
     return (
       <div className="flex flex-col h-full">
         <div className="bg-mhmr-olive px-4 py-3 flex items-center gap-3 shrink-0">
-          <button onClick={() => navigate('/analysis')} className="text-white/80 hover:text-white" aria-label="Back to Reports">
+          <button onClick={() => navigate(`/analysis?setId=${setId}`)} className="text-white/80 hover:text-white" aria-label="Back to Reports">
             <ArrowLeft size={22} aria-hidden="true" />
           </button>
           <h1 className="text-white font-bold flex-1">Text Report</h1>
@@ -126,7 +126,7 @@ export default function TextReportPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="bg-mhmr-olive px-4 py-3 flex items-center gap-3 shadow-sm shrink-0">
-        <button onClick={() => navigate('/analysis')} className="text-white/80 hover:text-white" aria-label="Back to Reports">
+        <button onClick={() => navigate(`/analysis?setId=${setId}`)} className="text-white/80 hover:text-white" aria-label="Back to Reports">
           <ArrowLeft size={22} aria-hidden="true" />
         </button>
         <h1 className="text-white font-bold flex-1">Text Report</h1>
