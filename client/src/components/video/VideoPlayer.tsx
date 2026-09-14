@@ -89,18 +89,18 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
   };
 
   return (
-    <div className={`bg-black rounded-xl overflow-hidden ${className}`}>
+    <div className={`bg-black rounded-xl overflow-hidden flex flex-col max-h-[70vh] ${className}`}>
       <video
         ref={videoRef}
         src={streamUrl}
-        className="w-full max-h-[60vh] object-contain"
+        className="min-h-0 flex-1 w-full object-contain"
         preload="metadata"
         autoPlay={autoPlay}
         onClick={togglePlay}
       />
 
       {/* Custom controls */}
-      <div className="bg-gray-900 px-4 py-2 flex items-center gap-3">
+      <div className="bg-gray-900 px-4 py-2 flex items-center gap-3 shrink-0">
         <button onClick={restart} className="text-white/60 hover:text-white">
           <SkipBack size={16} />
         </button>
