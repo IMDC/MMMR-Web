@@ -93,7 +93,7 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
       <video
         ref={videoRef}
         src={streamUrl}
-        className="w-full aspect-video object-contain"
+        className="w-full max-h-[60vh] object-contain"
         preload="metadata"
         autoPlay={autoPlay}
         onClick={togglePlay}
