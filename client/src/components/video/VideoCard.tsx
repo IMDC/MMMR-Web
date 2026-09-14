@@ -407,6 +407,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             <video
               src={streamUrl}
               className="w-full rounded-2xl shadow-2xl"
+              style={{ maxHeight: '85vh' }}
               controls
               autoPlay
               playsInline
