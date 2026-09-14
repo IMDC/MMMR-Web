@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Square, Circle, CheckCircle, Loader2, Video, Tag, ListVideo, X, Zap, ZapOff, AlertCircle, Settings, ChevronDown, ChevronUp, Plus, Check, Clapperboard } from 'lucide-react';
 import { useVideoStore } from '../store/videoStore';
+import { useVideoSetStore } from '../store/videoSetStore';
 import { useAuthStore } from '../store/authStore';
 import ProgressBar from '../components/common/ProgressBar';
 
@@ -11,6 +12,7 @@ interface Devices { cameras: MediaDeviceInfo[]; mics: MediaDeviceInfo[]; speaker
 export default function RecordPage() {
   const navigate = useNavigate();
   const { uploadVideo, startTranscription } = useVideoStore();
+  const { videoSets, fetchSets, addVideosToSet, createSet } = useVideoSetStore();
   const user = useAuthStore(s => s.user);
   const updatePreferences = useAuthStore(s => s.updatePreferences);
 
@@ -32,6 +34,12 @@ export default function RecordPage() {
   const [autoTranscribeStarted, setAutoTranscribeStarted] = useState(false);
   const [transcribeStatus, setTranscribeStatus] = useState<'running' | 'done' | 'error'>('running');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [showSetModal, setShowSetModal] = useState(false);
+  const [setModalTab, setSetModalTab] = useState<'existing' | 'new'>('existing');
+  const [newSetName, setNewSetName] = useState('');
+  const [addingToSet, setAddingToSet] = useState(false);
+  const [addedSetId, setAddedSetId] = useState<string | null>(null);
 
   const [devices, setDevices] = useState<Devices>({ cameras: [], mics: [], speakers: [] });
   const [selectedCameraId, setSelectedCameraId] = useState('');
@@ -203,6 +211,7 @@ export default function RecordPage() {
         runTranscription(video._id);
       }
 
+      fetchSets();
       setState('saved');
     } catch (err: any) {
       setError(err.message || 'Upload failed');
@@ -215,6 +224,36 @@ export default function RecordPage() {
     setShowTranscribePrompt(false);
     if (enabled && savedVideoId) {
       runTranscription(savedVideoId);
+    }
+  };
+
+  const openSetModal = () => {
+    setAddedSetId(null);
+    setNewSetName('');
+    setSetModalTab(videoSets.length >= 1 ? 'existing' : 'new');
+    setShowSetModal(true);
+  };
+
+  const handleAddToExistingSet = async (setId: string) => {
+    if (!savedVideoId) return;
+    setAddingToSet(true);
+    try {
+      await addVideosToSet(setId, [savedVideoId]);
+      navigate(`/videosets/${setId}`);
+    } finally {
+      setAddingToSet(false);
+    }
+  };
+
+  const handleCreateAndAddSet = async () => {
+    if (!newSetName.trim() || !savedVideoId) return;
+    setAddingToSet(true);
+    try {
+      const newSet = await createSet(newSetName.trim());
+      await addVideosToSet(newSet._id, [savedVideoId]);
+      navigate(`/videosets/${newSet._id}`);
+    } finally {
+      setAddingToSet(false);
     }
   };
 
@@ -243,6 +282,8 @@ export default function RecordPage() {
     setAutoTranscribeStarted(false);
     setTranscribeStatus('running');
     setShowTranscribePrompt(false);
+    setShowSetModal(false);
+    setAddedSetId(null);
     if (videoRef.current) videoRef.current.src = '';
     setState('idle');
     startPreview();
@@ -536,6 +577,19 @@ export default function RecordPage() {
               </button>
 
               <button
+                onClick={openSetModal}
+                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-colors text-left ${addedSetId ? 'border-mhmr-olive/40 bg-mhmr-olive/5' : 'border-gray-100 hover:border-mhmr-olive hover:bg-mhmr-olive/5'}`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${addedSetId ? 'bg-mhmr-olive/20' : 'bg-green-50'}`}>
+                  {addedSetId ? <Check size={20} className="text-mhmr-olive" /> : <Plus size={20} className="text-green-600" />}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">Add to Set</p>
+                  <p className="text-xs text-gray-400">{addedSetId ? `Added to ${videoSets.find(s => s._id === addedSetId)?.name ?? 'set'}` : 'Organise this video into a set'}</p>
+                </div>
+              </button>
+
+              <button
                 onClick={() => savedVideoId && navigate(`/videos/${savedVideoId}`)}
                 className="flex items-center gap-4 p-4 rounded-2xl border-2 border-gray-100 hover:border-mhmr-olive hover:bg-mhmr-olive/5 transition-colors text-left"
               >
@@ -560,6 +614,105 @@ export default function RecordPage() {
                   <p className="text-xs text-gray-400">View and manage all your recordings</p>
                 </div>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Set modal */}
+      {showSetModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowSetModal(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="record-addset-title"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 id="record-addset-title" className="font-bold text-gray-800">Add to Video Set</h2>
+              <button onClick={() => setShowSetModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex border-b border-gray-100">
+              <button
+                onClick={() => setSetModalTab('existing')}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${setModalTab === 'existing' ? 'text-mhmr-olive border-b-2 border-mhmr-olive' : 'text-gray-500'}`}
+              >
+                Existing Set
+              </button>
+              <button
+                onClick={() => setSetModalTab('new')}
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${setModalTab === 'new' ? 'text-mhmr-olive border-b-2 border-mhmr-olive' : 'text-gray-500'}`}
+              >
+                New Set
+              </button>
+            </div>
+
+            <div className="p-5">
+              {setModalTab === 'existing' ? (
+                videoSets.length === 0 ? (
+                  <div className="text-center py-6 text-gray-400">
+                    <Clapperboard size={32} className="mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No video sets yet.</p>
+                    <button onClick={() => setSetModalTab('new')} className="text-mhmr-olive text-sm font-medium mt-2 hover:underline">
+                      Create one
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {videoSets.map(s => {
+                      const justAdded = addedSetId === s._id;
+                      return (
+                        <button
+                          key={s._id}
+                          onClick={() => !justAdded && handleAddToExistingSet(s._id)}
+                          disabled={justAdded || addingToSet}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-colors ${justAdded ? 'border-mhmr-olive/30 bg-mhmr-olive/5 cursor-default' : 'border-gray-200 hover:border-mhmr-olive hover:bg-mhmr-olive/5'}`}
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{s.name}</p>
+                            <p className="text-xs text-gray-400">{s.videoIDs.length} video{s.videoIDs.length !== 1 ? 's' : ''}</p>
+                          </div>
+                          {justAdded && <Check size={16} className="text-mhmr-olive shrink-0" />}
+                          {!justAdded && addingToSet && <Loader2 size={16} className="text-gray-400 animate-spin shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={newSetName}
+                    onChange={e => setNewSetName(e.target.value)}
+                    placeholder="Set name (e.g. Week 1, January 2025)"
+                    className="form-input"
+                    onKeyDown={e => e.key === 'Enter' && handleCreateAndAddSet()}
+                    autoFocus
+                    aria-label="New set name"
+                  />
+                  {addedSetId && (
+                    <div className="flex items-center gap-2 text-sm text-mhmr-olive font-medium">
+                      <Check size={15} />
+                      Set created and video added!
+                    </div>
+                  )}
+                  <button
+                    onClick={handleCreateAndAddSet}
+                    disabled={!newSetName.trim() || addingToSet || !!addedSetId}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                  >
+                    {addingToSet ? <><Loader2 size={15} className="animate-spin" /> Creating...</> : <><Plus size={15} /> Create & Add</>}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

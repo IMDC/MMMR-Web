@@ -85,7 +85,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
     setAddingToSet(true);
     try {
       await addVideosToSet(setId, [video._id]);
-      setAddedToSetId(setId);
+      navigate(`/videosets/${setId}`);
     } finally {
       setAddingToSet(false);
     }
@@ -97,7 +97,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
     try {
       const newSet = await createSet(newSetName.trim());
       await addVideosToSet(newSet._id, [video._id]);
-      setAddedToSetId(newSet._id);
+      navigate(`/videosets/${newSet._id}`);
     } finally {
       setAddingToSet(false);
     }
