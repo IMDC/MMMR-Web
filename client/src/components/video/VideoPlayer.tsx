@@ -16,6 +16,7 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(knownDuration ?? 0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isPortrait, setIsPortrait] = useState(false);
 
   const streamUrl = videosApi.streamUrl(filename);
 
@@ -30,6 +31,7 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
     };
     const onLoadedMetadata = () => {
       setDuration(isFinite(v.duration) ? v.duration : (knownDuration ?? 0));
+      if (v.videoWidth && v.videoHeight) setIsPortrait(v.videoHeight > v.videoWidth);
     };
     const onDurationChange = () => {
       if (isFinite(v.duration)) setDuration(v.duration);
@@ -89,7 +91,7 @@ export default function VideoPlayer({ filename, className = '', autoPlay = false
   };
 
   return (
-    <div className={`bg-black rounded-xl overflow-hidden flex flex-col max-h-[70vh] ${className}`}>
+    <div className={`bg-black rounded-xl overflow-hidden flex flex-col max-h-[70vh] ${isPortrait ? 'md:max-w-[300px] md:mx-auto' : ''} ${className}`}>
       <video
         ref={videoRef}
         src={streamUrl}
