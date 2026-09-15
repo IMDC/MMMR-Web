@@ -35,6 +35,10 @@ export default function RecordPage() {
   const [transcribeStatus, setTranscribeStatus] = useState<'running' | 'done' | 'error'>('running');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [extensionsUsed, setExtensionsUsed] = useState(0);
+  const [showExtendBanner, setShowExtendBanner] = useState(false);
+  const [showRecordingInfo, setShowRecordingInfo] = useState(false);
+
   const [showSetModal, setShowSetModal] = useState(false);
   const [setModalTab, setSetModalTab] = useState<'existing' | 'new'>('existing');
   const [newSetName, setNewSetName] = useState('');
@@ -186,11 +190,39 @@ export default function RecordPage() {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   };
 
+  useEffect(() => {
+    if (state !== 'recording') return;
+    if (elapsed >= 180) { stopRecording(); return; }
+    const segmentElapsed = elapsed - extensionsUsed * 60;
+    if (segmentElapsed >= 45 && extensionsUsed < 2 && !showExtendBanner) setShowExtendBanner(true);
+  }, [elapsed, state, extensionsUsed, showExtendBanner]);
+
+  const handleExtend = () => {
+    setExtensionsUsed(e => e + 1);
+    setShowExtendBanner(false);
+  };
+
+  const handleStartRecordingClick = () => {
+    if (user?.recordingInfoDismissed) {
+      startRecording();
+    } else {
+      setShowRecordingInfo(true);
+    }
+  };
+
+  const handleInfoAcknowledge = (dontShowAgain: boolean) => {
+    if (dontShowAgain) updatePreferences({ recordingInfoDismissed: true });
+    setShowRecordingInfo(false);
+    startRecording();
+  };
+
   const discard = () => {
     setBlob(null);
     setTitle('');
     setState('idle');
     setElapsed(0);
+    setExtensionsUsed(0);
+    setShowExtendBanner(false);
     if (videoRef.current) videoRef.current.src = '';
   };
 
@@ -284,6 +316,8 @@ export default function RecordPage() {
     setShowTranscribePrompt(false);
     setShowSetModal(false);
     setAddedSetId(null);
+    setExtensionsUsed(0);
+    setShowExtendBanner(false);
     if (videoRef.current) videoRef.current.src = '';
     setState('idle');
     startPreview();
@@ -322,11 +356,27 @@ export default function RecordPage() {
             )}
 
             {state === 'recording' && (
-              <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1" role="status" aria-live="polite">
-                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
-                <span className="text-white text-xs font-bold uppercase tracking-wider">REC</span>
-                <span className="text-white text-sm font-mono">{formatTime(elapsed)}</span>
-              </div>
+              <>
+                {/* REC indicator */}
+                <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 rounded-full px-3 py-1" role="status" aria-live="polite">
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" aria-hidden="true" />
+                  <span className="text-white text-xs font-bold uppercase tracking-wider">REC</span>
+                  <span className="text-white text-sm font-mono">{formatTime(elapsed)}/{formatTime((extensionsUsed + 1) * 60)}</span>
+                </div>
+
+                {/* Extend prompt */}
+                {showExtendBanner && (
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between bg-black/60 backdrop-blur-sm rounded-xl px-4 py-3">
+                    <span className="text-white text-sm">Taking a bit longer?</span>
+                    <button
+                      onClick={handleExtend}
+                      className="text-sm font-semibold text-white bg-mhmr-olive hover:bg-mhmr-olive-dark rounded-lg px-3 py-1.5 transition-colors"
+                    >
+                      + 1 more minute
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -433,7 +483,7 @@ export default function RecordPage() {
           <div className="flex gap-3">
             {(state === 'idle' || state === 'preview') && (
               <button
-                onClick={startRecording}
+                onClick={handleStartRecordingClick}
                 disabled={state === 'idle'}
                 className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -469,6 +519,48 @@ export default function RecordPage() {
         </div>
 
       </div>
+
+      {/* Recording info modal */}
+      {showRecordingInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recording-info-title"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col gap-5 relative"
+          >
+            <button
+              onClick={() => { setShowRecordingInfo(false); navigate('/'); }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Close"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+
+            <div>
+              <h2 id="recording-info-title" className="text-lg font-bold text-gray-900 mb-2">Before You Record</h2>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Video entries are defaulted to a <span className="font-medium text-gray-700">1 minute</span> limit. If you wish to continue, you will be prompted at the 45-second mark to add an extra minute to your recording, up to a maximum of 3 minutes. You can stop at any point before then.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 w-full">
+              <button
+                onClick={() => handleInfoAcknowledge(false)}
+                className="btn-primary w-full"
+              >
+                I Understand
+              </button>
+              <button
+                onClick={() => handleInfoAcknowledge(true)}
+                className="text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
+              >
+                I Understand — Don't Show Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* First-time auto-transcription prompt */}
       {state === 'saved' && showTranscribePrompt && (
