@@ -7,6 +7,7 @@ export interface AuthUser {
   aiConsent: 'agreed' | 'disagreed' | null;
   autoTranscribe: boolean | null;
   summaryFormat: 'sentence' | 'chips' | 'both';
+  recordingInfoDismissed: boolean;
 }
 
 export interface UserPreferences {
@@ -14,6 +15,7 @@ export interface UserPreferences {
   aiConsent?: 'agreed' | 'disagreed' | null;
   autoTranscribe?: boolean | null;
   summaryFormat?: 'sentence' | 'chips' | 'both';
+  recordingInfoDismissed?: boolean;
 }
 
 export const authApi = {

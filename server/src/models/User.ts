@@ -7,6 +7,7 @@ export interface IUser extends Document {
   aiConsent: 'agreed' | 'disagreed' | null;
   autoTranscribe: boolean | null;
   summaryFormat: 'sentence' | 'chips' | 'both';
+  recordingInfoDismissed: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -17,6 +18,7 @@ const UserSchema = new Schema<IUser>(
     aiConsent: { type: String, enum: ['agreed', 'disagreed', null], default: null },
     autoTranscribe: { type: Boolean, default: null },
     summaryFormat: { type: String, enum: ['sentence', 'chips', 'both'], default: 'both' },
+    recordingInfoDismissed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
