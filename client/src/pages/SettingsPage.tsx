@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, ZapOff, Sparkles, Check, User } from 'lucide-react';
+import { Zap, ZapOff, Sparkles, Check, User, Video } from 'lucide-react';
 import Header from '../components/layout/Header';
 import { useAuthStore } from '../store/authStore';
 
@@ -11,6 +11,8 @@ export default function SettingsPage() {
   const [aiConsent, setAiConsent] = useState<'agreed' | 'disagreed' | null>(user?.aiConsent ?? null);
   const [showAiConfirm, setShowAiConfirm] = useState(false);
   const [summaryFormat, setSummaryFormat] = useState<'sentence' | 'chips' | 'both'>(user?.summaryFormat ?? 'both');
+
+  const [recordingInfoDismissed, setRecordingTipDismissed] = useState<boolean>(user?.recordingInfoDismissed ?? false);
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [displayNameSaved, setDisplayNameSaved] = useState(false);
@@ -170,6 +172,38 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+        {/* Recording */}
+        <div className="card !p-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Video size={16} className="text-mhmr-olive" />
+            <h2 className="font-semibold text-gray-800 text-sm">Recording</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-2">Show the recording time limit info before starting a new recording.</p>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => { setRecordingTipDismissed(false); updatePreferences({ recordingInfoDismissed: false }); }}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-colors text-center
+                ${!recordingInfoDismissed ? 'border-mhmr-olive bg-mhmr-olive/10' : 'border-gray-100 hover:border-gray-300'}`}
+              aria-pressed={!recordingInfoDismissed}
+            >
+              <Video size={18} className={!recordingInfoDismissed ? 'text-mhmr-olive' : 'text-gray-400'} />
+              <p className="font-semibold text-gray-800 text-xs">Show info</p>
+              <p className="text-xs text-gray-400 leading-tight">Remind me before recording</p>
+            </button>
+
+            <button
+              onClick={() => { setRecordingTipDismissed(true); updatePreferences({ recordingInfoDismissed: true }); }}
+              className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-colors text-center
+                ${recordingInfoDismissed ? 'border-gray-400 bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}
+              aria-pressed={recordingInfoDismissed}
+            >
+              <Video size={18} className={recordingInfoDismissed ? 'text-gray-600' : 'text-gray-400'} />
+              <p className="font-semibold text-gray-800 text-xs">Don't show</p>
+              <p className="text-xs text-gray-400 leading-tight">Skip each time</p>
+            </button>
+          </div>
         </div>
       </div>
 
