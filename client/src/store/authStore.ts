@@ -52,6 +52,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   updatePreferences: async (prefs) => {
+    set(state => ({ user: state.user ? { ...state.user, ...prefs } : state.user }));
     const updated = await authApi.updatePreferences(prefs);
     set({ user: updated });
   },
