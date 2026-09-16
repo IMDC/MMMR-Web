@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
+  mustChangePassword: boolean;
   aiConsent: 'agreed' | 'disagreed' | null;
   autoTranscribe: boolean | null;
   summaryFormat: 'sentence' | 'chips' | 'both';
@@ -30,4 +31,7 @@ export const authApi = {
 
   updatePreferences: (prefs: UserPreferences) =>
     apiClient.patch<AuthUser>('/auth/preferences', prefs).then(r => r.data),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient.post<AuthUser>('/auth/change-password', { currentPassword, newPassword }).then(r => r.data),
 };

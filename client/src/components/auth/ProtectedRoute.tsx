@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 
 export default function ProtectedRoute() {
   const status = useAuthStore(s => s.status);
+  const user = useAuthStore(s => s.user);
 
   if (status === 'loading') {
     return (
@@ -14,6 +15,11 @@ export default function ProtectedRoute() {
   }
 
   if (status === 'anon') {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Authenticated but must set a personal password first — send back to login page step 2
+  if (user?.mustChangePassword) {
     return <Navigate to="/login" replace />;
   }
 

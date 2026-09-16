@@ -14,6 +14,7 @@ interface AuthStore {
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updatePreferences: (prefs: UserPreferences) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 // Clear all participant data caches so nothing leaks between logins.
@@ -54,6 +55,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
   updatePreferences: async (prefs) => {
     set(state => ({ user: state.user ? { ...state.user, ...prefs } : state.user }));
     const updated = await authApi.updatePreferences(prefs);
+    set({ user: updated });
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const updated = await authApi.changePassword(currentPassword, newPassword);
     set({ user: updated });
   },
 }));

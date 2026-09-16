@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { asyncWrapper } from '../middleware/asyncWrapper';
-import { login, logout, me, updatePreferences } from '../controllers/authController';
+import { login, logout, me, updatePreferences, changePassword } from '../controllers/authController';
 
 const router = Router();
 
@@ -39,5 +39,6 @@ router.post('/login', loginRateLimit, asyncWrapper(login));
 router.post('/logout', asyncWrapper(logout));
 router.get('/me', asyncWrapper(me));
 router.patch('/preferences', asyncWrapper(updatePreferences));
+router.post('/change-password', asyncWrapper(changePassword));
 
 export default router;
