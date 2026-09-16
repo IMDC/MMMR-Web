@@ -78,7 +78,7 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
   const set = await VideoSet.findOne({ _id: videoSetId, userId: req.userId });
   if (!set) return res.status(404).json({ error: 'Video set not found' });
 
-  const videos = await VideoData.find({ _id: { $in: set.videoIDs } });
+  const videos = await VideoData.find({ _id: { $in: set.videoIDs }, userId: req.userId });
 
   // Analyze each video individually so tsOutputBullet / tsOutputSentence / sentiment
   // are written to VideoData — mirrors the Android per-video analysis flow.
@@ -154,6 +154,7 @@ export async function getFrequencyData(req: Request, res: Response) {
 
   const videos = await VideoData.find({
     _id: { $in: set.videoIDs },
+    userId: req.userId,
     isTranscribed: true,
   });
 
@@ -195,6 +196,7 @@ export async function getLineGraphData(req: Request, res: Response) {
 
   const videos = await VideoData.find({
     _id: { $in: set.videoIDs },
+    userId: req.userId,
     isTranscribed: true,
   }).sort({ datetimeRecorded: 1 });
 
