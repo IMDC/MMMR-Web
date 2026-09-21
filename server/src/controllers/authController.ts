@@ -7,7 +7,7 @@ function publicUser(user: { _id: any; username: string; displayName: string; mus
     id: user._id.toString(),
     username: user.username,
     displayName: user.displayName,
-    mustChangePassword: user.mustChangePassword ?? true,
+    mustChangePassword: user.mustChangePassword ?? false,
     aiConsent: user.aiConsent ?? null,
     autoTranscribe: user.autoTranscribe ?? null,
     summaryFormat: user.summaryFormat ?? 'both',
