@@ -217,7 +217,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             </div>
           ) : (
             <div className="flex items-start gap-1">
-              <h3 className="font-semibold text-gray-800 text-sm leading-tight line-clamp-2 flex-1">{video.title}</h3>
+              <h3 className="font-semibold text-gray-800 text-[15px] leading-tight line-clamp-2 flex-1">{video.title}</h3>
               {!selectable && !readOnly && (
                 <button
                   onClick={startEditing}
@@ -229,7 +229,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               )}
             </div>
           )}
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-[13px] text-gray-400 mt-0.5">
             {format(new Date(video.datetimeRecorded), 'MMM d, yyyy • h:mm a')}
           </p>
         </div>
@@ -243,12 +243,12 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
                 <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">AI Summary</span>
               </div>
               {(summaryFormat === 'sentence' || summaryFormat === 'both') && video.videoSummary && (
-                <p className="text-xs text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
+                <p className="text-[13px] text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
               )}
               {(summaryFormat === 'chips' || summaryFormat === 'both') && video.videoTopics?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {video.videoTopics.map((topic, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-gray-50">{topic}</span>
+                    <span key={i} className="text-[13px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-gray-50">{topic}</span>
                   ))}
                 </div>
               )}
@@ -267,16 +267,16 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-400 group-hover/summary:text-mhmr-olive transition-colors">
                   <SlidersHorizontal size={13} aria-hidden="true" />
-                  <span className="text-[11px]">Edit</span>
+                  <span className="text-xs">Edit</span>
                 </div>
               </div>
               {(summaryFormat === 'sentence' || summaryFormat === 'both') && video.videoSummary && (
-                <p className="text-xs text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
+                <p className="text-[13px] text-gray-500 italic leading-relaxed">{video.videoSummary}</p>
               )}
               {(summaryFormat === 'chips' || summaryFormat === 'both') && video.videoTopics?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {video.videoTopics.map((topic, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-gray-50">{topic}</span>
+                    <span key={i} className="text-[13px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-500 bg-gray-50">{topic}</span>
                   ))}
                 </div>
               )}
