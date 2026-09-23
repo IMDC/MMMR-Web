@@ -31,7 +31,16 @@ export async function login(req: Request, res: Response) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
-  req.session.userId = user._id.toString();
+  // If the user must change their password, do NOT establish a real session yet.
+  // Store a pending slot instead — it grants no access to protected routes.
+  // The session is only promoted to a full userId after changePassword succeeds.
+  if (user.mustChangePassword) {
+    req.session.pendingUserId = user._id.toString();
+    req.session.userId = undefined;
+  } else {
+    req.session.userId = user._id.toString();
+    req.session.pendingUserId = undefined;
+  }
   res.json(publicUser(user));
 }
 
@@ -82,7 +91,9 @@ function validateNewPassword(password: string): string | null {
 }
 
 export async function changePassword(req: Request, res: Response) {
-  const userId = req.session?.userId;
+  // Accept both a full session (already-authed user changing password from settings)
+  // and a pending session (first-login forced change before a real session exists).
+  const userId = req.session?.userId ?? req.session?.pendingUserId;
   if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
   const { currentPassword, newPassword } = req.body;
@@ -105,6 +116,10 @@ export async function changePassword(req: Request, res: Response) {
   const passwordHash = await bcrypt.hash(newPassword, 10);
   const updated = await User.findByIdAndUpdate(userId, { passwordHash, mustChangePassword: false }, { new: true });
   if (!updated) return res.status(404).json({ error: 'User not found' });
+
+  // Promote the pending slot to a real authenticated session.
+  req.session.userId = updated._id.toString();
+  req.session.pendingUserId = undefined;
 
   res.json(publicUser(updated));
 }
