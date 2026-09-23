@@ -19,7 +19,6 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   const handleTranscribePref = (auto: boolean) => {
     setAutoTranscribe(auto);
-    setStep(3);
   };
 
   const BackButton = ({ to }: { to: 1 | 2 }) => (
@@ -108,9 +107,13 @@ export default function OnboardingModal({ onComplete }: Props) {
             <div className="flex flex-col gap-3 mb-4">
               <button
                 onClick={() => handleTranscribePref(true)}
-                className="flex items-start gap-3 p-4 rounded-2xl border-2 border-mhmr-olive bg-mhmr-olive/5 hover:bg-mhmr-olive/10 transition-colors text-left"
+                className={`flex items-start gap-3 p-4 rounded-2xl border-2 transition-colors text-left ${
+                  autoTranscribe === true
+                    ? 'border-mhmr-olive bg-mhmr-olive/5'
+                    : 'border-gray-100 hover:border-gray-300'
+                }`}
               >
-                <Zap size={20} className="text-mhmr-olive shrink-0 mt-0.5" aria-hidden="true" />
+                <Zap size={20} className={`shrink-0 mt-0.5 ${autoTranscribe === true ? 'text-mhmr-olive' : 'text-gray-400'}`} aria-hidden="true" />
                 <div>
                   <p className="font-semibold text-gray-800 text-sm">Auto-Transcription</p>
                   <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
@@ -121,9 +124,13 @@ export default function OnboardingModal({ onComplete }: Props) {
 
               <button
                 onClick={() => handleTranscribePref(false)}
-                className="flex items-start gap-3 p-4 rounded-2xl border-2 border-gray-100 hover:border-gray-300 transition-colors text-left"
+                className={`flex items-start gap-3 p-4 rounded-2xl border-2 transition-colors text-left ${
+                  autoTranscribe === false
+                    ? 'border-mhmr-olive bg-mhmr-olive/5'
+                    : 'border-gray-100 hover:border-gray-300'
+                }`}
               >
-                <ZapOff size={20} className="text-gray-400 shrink-0 mt-0.5" aria-hidden="true" />
+                <ZapOff size={20} className={`shrink-0 mt-0.5 ${autoTranscribe === false ? 'text-mhmr-olive' : 'text-gray-400'}`} aria-hidden="true" />
                 <div>
                   <p className="font-semibold text-gray-800 text-sm">Manual Transcription</p>
                   <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
@@ -134,6 +141,13 @@ export default function OnboardingModal({ onComplete }: Props) {
             </div>
 
             <StepDots />
+            <button
+              onClick={() => setStep(3)}
+              disabled={autoTranscribe === null}
+              className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed mb-2"
+            >
+              Continue
+            </button>
             <p className="text-xs text-gray-400 text-center">You can change this in Settings at any time.</p>
           </div>
         )}
