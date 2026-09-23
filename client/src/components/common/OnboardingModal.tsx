@@ -67,7 +67,7 @@ export default function OnboardingModal({ onComplete }: Props) {
               Welcome to MyMissionMyRecord
             </h2>
             <p className="text-sm text-gray-500 mb-5">
-              What should we call you? This is just your display name — your login stays the same.
+              What should we call you? This is just your display name, your login stays the same.
             </p>
             <label htmlFor="display-name-input" className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Display name
