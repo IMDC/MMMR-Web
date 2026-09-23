@@ -31,17 +31,25 @@ export async function login(req: Request, res: Response) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
 
-  // If the user must change their password, do NOT establish a real session yet.
-  // Store a pending slot instead — it grants no access to protected routes.
-  // The session is only promoted to a full userId after changePassword succeeds.
-  if (user.mustChangePassword) {
-    req.session.pendingUserId = user._id.toString();
-    req.session.userId = undefined;
-  } else {
-    req.session.userId = user._id.toString();
-    req.session.pendingUserId = undefined;
-  }
-  res.json(publicUser(user));
+  // Regenerate the session ID on every successful login to prevent session fixation.
+  // An attacker who plants a known session cookie before login cannot reuse it after.
+  req.session.regenerate((err) => {
+    if (err) return res.status(500).json({ error: 'Session error' });
+
+    // If the user must change their password, do NOT establish a real session yet.
+    // Store a pending slot instead — it grants no access to protected routes.
+    // The session is only promoted to a full userId after changePassword succeeds.
+    if (user.mustChangePassword) {
+      req.session.pendingUserId = user._id.toString();
+    } else {
+      req.session.userId = user._id.toString();
+    }
+
+    req.session.save((err2) => {
+      if (err2) return res.status(500).json({ error: 'Session error' });
+      res.json(publicUser(user));
+    });
+  });
 }
 
 export async function logout(req: Request, res: Response) {
