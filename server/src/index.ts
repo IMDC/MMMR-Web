@@ -18,6 +18,12 @@ import contactsRouter from './routes/contacts';
 
 const app = express();
 
+// Trust the reverse proxy chain (host nginx -> frontend container nginx) so
+// req.ip is the real client address from X-Forwarded-For rather than the
+// proxy's internal Docker IP. Without this every request looks like it comes
+// from one address, which makes per-IP rate limiting apply system-wide.
+app.set('trust proxy', config.trustProxy);
+
 // Security & logging middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
@@ -43,7 +49,11 @@ app.use(
 );
 
 // Health check (public)
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+// `ip` echoes back the caller's address so the trust-proxy setting can be
+// verified from outside: it should differ between two client networks.
+app.get('/api/health', (req, res) =>
+  res.json({ status: 'ok', timestamp: new Date(), ip: req.ip }),
+);
 
 // Auth routes (public)
 app.use('/api/auth', authRouter);
