@@ -9,6 +9,35 @@ import ProgressBar from '../components/common/ProgressBar';
 type RecordingState = 'idle' | 'preview' | 'recording' | 'recorded' | 'uploading' | 'saved';
 interface Devices { cameras: MediaDeviceInfo[]; mics: MediaDeviceInfo[]; speakers: MediaDeviceInfo[]; }
 
+// Remembered input/output device choices. Deliberately localStorage rather than
+// the User model: a deviceId is only meaningful in the browser that issued it,
+// so syncing it to the DB would push a useless (and possibly stale) id to every
+// other device the participant logs in from.
+const DEVICE_KEYS = {
+  camera: 'mhmr_device_camera',
+  mic: 'mhmr_device_mic',
+  speaker: 'mhmr_device_speaker',
+} as const;
+
+// Every read/write is guarded: localStorage throws in private mode and with
+// site data blocked, and the recorder must still work when it is unavailable.
+function loadDevice(key: string): string {
+  try {
+    return localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveDevice(key: string, id: string) {
+  try {
+    if (id) localStorage.setItem(key, id);
+    else localStorage.removeItem(key);
+  } catch {
+    /* preference simply is not remembered */
+  }
+}
+
 export default function RecordPage() {
   const navigate = useNavigate();
   const { uploadVideo, startTranscription } = useVideoStore();
@@ -46,9 +75,9 @@ export default function RecordPage() {
   const [addedSetId, setAddedSetId] = useState<string | null>(null);
 
   const [devices, setDevices] = useState<Devices>({ cameras: [], mics: [], speakers: [] });
-  const [selectedCameraId, setSelectedCameraId] = useState('');
-  const [selectedMicId, setSelectedMicId] = useState('');
-  const [selectedSpeakerId, setSelectedSpeakerId] = useState('');
+  const [selectedCameraId, setSelectedCameraId] = useState(() => loadDevice(DEVICE_KEYS.camera));
+  const [selectedMicId, setSelectedMicId] = useState(() => loadDevice(DEVICE_KEYS.mic));
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState(() => loadDevice(DEVICE_KEYS.speaker));
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
 
@@ -108,26 +137,59 @@ export default function RecordPage() {
     stopMicMonitor();
 
     const isPortrait = window.innerHeight > window.innerWidth;
-    const videoConstraints: MediaTrackConstraints = cameraId
-      ? { deviceId: { exact: cameraId } }
-      : isPortrait ? { facingMode: 'user' } : { width: { ideal: 1280 }, height: { ideal: 720 } };
+    const defaultVideoConstraints: MediaTrackConstraints = isPortrait
+      ? { facingMode: 'user' }
+      : { width: { ideal: 1280 }, height: { ideal: 720 } };
 
     let videoTracks: MediaStreamTrack[] = [];
     let audioTracks: MediaStreamTrack[] = [];
     const errs: string[] = [];
 
+    // A remembered deviceId can point at hardware that has since been unplugged,
+    // and `exact` makes getUserMedia throw instead of falling back. Retry once
+    // on the default device and forget the stale id — otherwise the recorder
+    // dead-ends on "not detected" with no way out, because the device picker
+    // only renders once a preview has succeeded.
     try {
-      const vs = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+      const vs = await navigator.mediaDevices.getUserMedia({
+        video: cameraId ? { deviceId: { exact: cameraId } } : defaultVideoConstraints,
+      });
       videoTracks = vs.getVideoTracks();
     } catch {
-      errs.push('Camera');
+      if (cameraId) {
+        saveDevice(DEVICE_KEYS.camera, '');
+        setSelectedCameraId('');
+        cameraId = '';
+        try {
+          const vs = await navigator.mediaDevices.getUserMedia({ video: defaultVideoConstraints });
+          videoTracks = vs.getVideoTracks();
+        } catch {
+          errs.push('Camera');
+        }
+      } else {
+        errs.push('Camera');
+      }
     }
 
     try {
-      const as = await navigator.mediaDevices.getUserMedia({ audio: micId ? { deviceId: { exact: micId } } : true });
+      const as = await navigator.mediaDevices.getUserMedia({
+        audio: micId ? { deviceId: { exact: micId } } : true,
+      });
       audioTracks = as.getAudioTracks();
     } catch {
-      errs.push('Microphone');
+      if (micId) {
+        saveDevice(DEVICE_KEYS.mic, '');
+        setSelectedMicId('');
+        micId = '';
+        try {
+          const as = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioTracks = as.getAudioTracks();
+        } catch {
+          errs.push('Microphone');
+        }
+      } else {
+        errs.push('Microphone');
+      }
     }
 
     if (errs.length === 2) { setError('Camera and Microphone not detected'); return; }
@@ -174,6 +236,15 @@ export default function RecordPage() {
         videoRef.current.srcObject = null;
         videoRef.current.src = URL.createObjectURL(recordedBlob);
         videoRef.current.muted = false;
+        // Playback is the only point where the speaker choice is audible (the
+        // live preview is muted to avoid feedback), and setSinkId is a property
+        // of the element, so a remembered choice has to be re-applied here.
+        if (selectedSpeakerId && 'setSinkId' in videoRef.current) {
+          (videoRef.current as any).setSinkId(selectedSpeakerId).catch(() => {
+            // Device gone or output switching unsupported — fall back to default.
+            saveDevice(DEVICE_KEYS.speaker, '');
+          });
+        }
       }
       streamRef.current?.getTracks().forEach(t => t.stop());
       setState('recorded');
@@ -291,16 +362,19 @@ export default function RecordPage() {
 
   const handleCameraChange = (id: string) => {
     setSelectedCameraId(id);
+    saveDevice(DEVICE_KEYS.camera, id);
     if (state === 'preview') startPreview(id, selectedMicId);
   };
 
   const handleMicChange = (id: string) => {
     setSelectedMicId(id);
+    saveDevice(DEVICE_KEYS.mic, id);
     if (state === 'preview') startPreview(selectedCameraId, id);
   };
 
   const handleSpeakerChange = async (id: string) => {
     setSelectedSpeakerId(id);
+    saveDevice(DEVICE_KEYS.speaker, id);
     if (videoRef.current && 'setSinkId' in videoRef.current) {
       await (videoRef.current as any).setSinkId(id);
     }
