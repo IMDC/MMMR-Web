@@ -30,6 +30,19 @@ export const config = {
   sessionSecret: process.env.SESSION_SECRET || 'dev-insecure-session-secret-change-me',
   openAiKey: process.env.API_OPENAI_CHATGPT || '',
   ibmWatsonKey: process.env.API_KEY_SPEECH_TO_TEXT || '',
+  // GPT-5 analysis model. Env-overridable so the model can be changed (or
+  // rolled back to gpt-4o) on the VPS without a rebuild. Note: gpt-4o needs
+  // the legacy `max_tokens`/`temperature` params, so a rollback also means
+  // reverting the request body in chatgptService.
+  openAiModel: process.env.OPENAI_MODEL || 'gpt-5',
+  // 'minimal' keeps GPT-5 closest to gpt-4o: it spends no reasoning tokens,
+  // so output length, latency and cost all stay near the old baseline.
+  openAiReasoningEffort: process.env.OPENAI_REASONING_EFFORT || 'minimal',
+  // Ceiling only — measured visible output is 60-95 tokens, same as gpt-4o
+  // under its old 400 limit. Sized well above that because on GPT-5 this
+  // budget is shared with reasoning tokens, and exhausting it returns an
+  // empty string rather than an error.
+  openAiMaxCompletionTokens: parseInt(process.env.OPENAI_MAX_COMPLETION_TOKENS || '1500', 10),
   uploadsDir: path.isAbsolute(uploadsEnv)
     ? uploadsEnv
     : path.resolve(SERVER_ROOT, uploadsEnv),
