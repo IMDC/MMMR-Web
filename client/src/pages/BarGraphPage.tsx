@@ -24,6 +24,13 @@ function getVideoSentiment(v: Video) {
   return v.biasAdjustedSentiment || v.sentiment || '';
 }
 
+// Default minimum word frequency, matching the store's own default. Single
+// source of truth for both the fetched value and the modal input: these were
+// previously separate literals (1 and '2') that disagreed, so the chart showed
+// every word while the modal claimed to filter at 2 until the user nudged the
+// number and forced a refetch.
+const DEFAULT_MIN_COUNT = 2;
+
 export default function BarGraphPage() {
   const { setId } = useParams<{ setId: string }>();
   const navigate = useNavigate();
@@ -33,8 +40,8 @@ export default function BarGraphPage() {
 
   const [data, setData] = useState<{ text: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [minCount, setMinCount] = useState(1);
-  const [minCountInput, setMinCountInput] = useState('2');
+  const [minCount, setMinCount] = useState(DEFAULT_MIN_COUNT);
+  const [minCountInput, setMinCountInput] = useState(String(DEFAULT_MIN_COUNT));
   // hiddenWords: words removed from the chart (checked in modal = hidden)
   const [hiddenWords, setHiddenWords] = useState<Set<string>>(new Set());
   const [showWordSettings, setShowWordSettings] = useState(false);
