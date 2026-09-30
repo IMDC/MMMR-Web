@@ -32,5 +32,7 @@ npm-debug.log*
 # Project docs (local only)
 CLAUDE.md
 
-# Seed script contains plaintext participant credentials — never commit
-server/src/scripts/seedUsers.ts
+# Plaintext participant credentials for seedUsers.ts — never commit.
+# The script itself is committed; it reads the accounts from this file.
+# participants.example.tsv documents the format.
+server/participants.tsv

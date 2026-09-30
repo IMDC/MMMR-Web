@@ -1,0 +1,14 @@
+# Seed credentials for seedUsers.ts — username <tab> password, one per line.
+#
+# The real file (participants.tsv) is gitignored: it holds plaintext study
+# participant credentials and must never be committed. Copy this template,
+# fill it in, and move it to the host out of band (scp + docker cp).
+#
+# Passwords may contain any character except whitespace. Blank lines and
+# lines starting with # are ignored.
+#
+# username	password
+25-2	ReplaceMe1!
+26-11	ReplaceMe2!
+demo	ReplaceMe3!
+QA1	ReplaceMe4!
