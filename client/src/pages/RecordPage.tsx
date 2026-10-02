@@ -51,6 +51,8 @@ export default function RecordPage() {
   const chunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const micFrameRef = useRef<number | null>(null);
+  // Object URL for the recorded blob shown after a take, so it can be revoked.
+  const playbackUrlRef = useRef<string | null>(null);
 
   const [state, setState] = useState<RecordingState>('idle');
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -145,15 +147,22 @@ export default function RecordPage() {
     let audioTracks: MediaStreamTrack[] = [];
     const errs: string[] = [];
 
+    // The size/facing preferences go on every request, not just the first one.
+    // A bare { deviceId } lets the browser pick its own default capture size
+    // (often 640x480), and object-cover crops that 4:3 frame harder than the
+    // 16:9 one the first preview asked for — so the camera looked like it zoomed
+    // in on the second recording, once a deviceId had been remembered.
+    const videoConstraints: MediaTrackConstraints = cameraId
+      ? { ...defaultVideoConstraints, deviceId: { exact: cameraId } }
+      : defaultVideoConstraints;
+
     // A remembered deviceId can point at hardware that has since been unplugged,
     // and `exact` makes getUserMedia throw instead of falling back. Retry once
     // on the default device and forget the stale id — otherwise the recorder
     // dead-ends on "not detected" with no way out, because the device picker
     // only renders once a preview has succeeded.
     try {
-      const vs = await navigator.mediaDevices.getUserMedia({
-        video: cameraId ? { deviceId: { exact: cameraId } } : defaultVideoConstraints,
-      });
+      const vs = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
       videoTracks = vs.getVideoTracks();
     } catch {
       if (cameraId) {
@@ -234,7 +243,8 @@ export default function RecordPage() {
       setBlob(recordedBlob);
       if (videoRef.current) {
         videoRef.current.srcObject = null;
-        videoRef.current.src = URL.createObjectURL(recordedBlob);
+        playbackUrlRef.current = URL.createObjectURL(recordedBlob);
+        videoRef.current.src = playbackUrlRef.current;
         videoRef.current.muted = false;
         // Playback is the only point where the speaker choice is audible (the
         // live preview is muted to avoid feedback), and setSinkId is a property
@@ -287,6 +297,23 @@ export default function RecordPage() {
     startRecording();
   };
 
+  // Detach the recorded take from the <video> element so a live preview can be
+  // attached to it again. Assigning src = '' leaves an empty attribute that the
+  // browser resolves against the page URL and then fails to load; removing the
+  // attribute and calling load() clears the element properly.
+  const resetVideoElement = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.pause();
+    if (playbackUrlRef.current) {
+      URL.revokeObjectURL(playbackUrlRef.current);
+      playbackUrlRef.current = null;
+    }
+    el.removeAttribute('src');
+    el.srcObject = null;
+    el.load();
+  };
+
   const discard = () => {
     setBlob(null);
     setTitle('');
@@ -294,7 +321,10 @@ export default function RecordPage() {
     setElapsed(0);
     setExtensionsUsed(0);
     setShowExtendBanner(false);
-    if (videoRef.current) videoRef.current.src = '';
+    resetVideoElement();
+    // Recording stopped every track, so the camera has to be reacquired or the
+    // user is left on the record page staring at a black frame.
+    startPreview();
   };
 
   const save = async () => {
@@ -392,7 +422,7 @@ export default function RecordPage() {
     setAddedSetId(null);
     setExtensionsUsed(0);
     setShowExtendBanner(false);
-    if (videoRef.current) videoRef.current.src = '';
+    resetVideoElement();
     setState('idle');
     startPreview();
   };
