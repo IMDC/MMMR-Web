@@ -169,7 +169,7 @@ export default function OnboardingModal({ onComplete }: Props) {
                   <Sparkles size={15} className="text-purple-600" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">AI Analysis & Summaries (GPT-4)</p>
+                  <p className="text-sm font-semibold text-gray-800">AI Analysis & Summaries (GPT-5)</p>
                   <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
                     Your transcript text is sent to OpenAI to generate summaries, keyword topics, and health insights.
                   </p>

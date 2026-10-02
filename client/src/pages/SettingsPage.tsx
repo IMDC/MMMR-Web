@@ -117,7 +117,7 @@ export default function SettingsPage() {
             <Sparkles size={16} className="text-purple-500" />
             <h2 className="font-semibold text-gray-800 text-sm">AI Features</h2>
           </div>
-          <p className="text-xs text-gray-500 mb-2">Sends transcript text to OpenAI GPT-4 to generate summaries, keyword topics, and health insights on your videos.</p>
+          <p className="text-xs text-gray-500 mb-2">Sends transcript text to OpenAI GPT-5 to generate summaries, keyword topics, and health insights on your videos.</p>
 
           <div className="grid grid-cols-2 gap-2 mb-2">
             <button
@@ -224,7 +224,7 @@ export default function SettingsPage() {
           >
             <h2 id="ai-confirm-title" className="font-bold text-gray-800 mb-2">Enable AI Features?</h2>
             <p className="text-sm text-gray-600 mb-5">
-              When enabled, transcript text is sent to OpenAI GPT-4 to generate summaries on video cards and auto-generate text reports.
+              When enabled, transcript text is sent to OpenAI GPT-5 to generate summaries on video cards and auto-generate text reports.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowAiConfirm(false)} className="flex-1 btn-secondary">

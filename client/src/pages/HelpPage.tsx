@@ -50,11 +50,11 @@ const sections = [
       },
       {
         q: 'How is sentiment calculated?',
-        a: 'Sentiment is calculated by combining: the GPT-4o AI analysis of your transcripts, your emotion sticker selections (weighted), and your pain scale entries (weighted). These are blended into an overall sentiment score from Very Negative to Very Positive.',
+        a: 'Sentiment is calculated by combining: the GPT-5 AI analysis of your transcripts, your emotion sticker selections (weighted), and your pain scale entries (weighted). These are blended into an overall sentiment score from Very Negative to Very Positive.',
       },
       {
         q: 'What is the AI Text Report?',
-        a: 'When you enable AI Text Reports and click Generate, the app sends your transcripts to GPT-4o which creates bullet-point summaries and an overall summary sentence. Each bullet is also given an individual sentiment score.',
+        a: 'When you enable AI Text Reports and click Generate, the app sends your transcripts to GPT-5 which creates bullet-point summaries and an overall summary sentence. Each bullet is also given an individual sentiment score.',
       },
     ] as FaqItem[],
   },
