@@ -97,7 +97,7 @@ export default function CrisisWarningModal() {
               <p className="text-sm text-rose-900 mt-1">{alert.detectedPhrases.join(', ')}</p>
               <p className="text-xs text-rose-900/70 mt-2">
                 This isn't always right. If it picked up something you didn't mean that
-                way, you can ignore it below.
+                way, select Ignore at the end of this screen.
               </p>
             </div>
           )}
