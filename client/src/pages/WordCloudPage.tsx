@@ -36,6 +36,10 @@ export default function WordCloudPage() {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; word: string; count: number } | null>(null);
 
   const [hiddenWords, setHiddenWords] = useState<Set<string>>(new Set());
+  // Pending selection inside the settings modal. The cloud keeps rendering
+  // from `hiddenWords` until Apply is pressed: committing on every tap meant a
+  // full WordCloud() canvas re-layout per word, which crawls on phones.
+  const [draftHidden, setDraftHidden] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
   const [wordSearch, setWordSearch] = useState('');
 
@@ -167,13 +171,33 @@ export default function WordCloudPage() {
     if (!loading) render();
   }, [render, loading]);
 
-  const toggleHidden = (word: string) => {
-    setHiddenWords(prev => {
+  const sameSet = (a: Set<string>, b: Set<string>) =>
+    a.size === b.size && [...a].every(w => b.has(w));
+
+  // Seed the draft from what is currently applied, so reopening the modal
+  // shows the live state rather than a stale selection.
+  const openSettings = () => {
+    setDraftHidden(new Set(hiddenWords));
+    setWordSearch('');
+    setShowSettings(true);
+  };
+
+  const toggleDraft = (word: string) => {
+    setDraftHidden(prev => {
       const next = new Set(prev);
       next.has(word) ? next.delete(word) : next.add(word);
       return next;
     });
   };
+
+  const applySettings = () => {
+    // Swap state only when the selection actually changed — handing useMemo a
+    // fresh Set with identical contents would re-layout the canvas for nothing.
+    if (!sameSet(draftHidden, hiddenWords)) setHiddenWords(new Set(draftHidden));
+    setShowSettings(false);
+  };
+
+  const draftDirty = !sameSet(draftHidden, hiddenWords);
 
   return (
     <div className="flex flex-col h-full">
@@ -234,7 +258,7 @@ export default function WordCloudPage() {
             </div>
 
             <button
-              onClick={() => setShowSettings(true)}
+              onClick={openSettings}
               className="flex items-center gap-1.5 bg-mhmr-olive text-white text-xs font-semibold px-4 py-2 rounded-full hover:bg-mhmr-olive-dark transition-colors shrink-0 self-end"
               aria-label="Open word settings"
             >
@@ -327,12 +351,12 @@ export default function WordCloudPage() {
             <div className="px-5 pt-4 pb-3 border-b border-gray-100 shrink-0 space-y-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Words in cloud</p>
-                {hiddenWords.size > 0 && (
+                {draftHidden.size > 0 && (
                   <button
-                    onClick={() => setHiddenWords(new Set())}
+                    onClick={() => setDraftHidden(new Set())}
                     className="text-xs text-mhmr-olive hover:underline font-medium"
                   >
-                    Show all ({hiddenWords.size} hidden)
+                    Show all ({draftHidden.size} hidden)
                   </button>
                 )}
               </div>
@@ -344,7 +368,9 @@ export default function WordCloudPage() {
                 className="form-input"
                 aria-label="Search words"
               />
-              <p className="text-xs text-gray-400">Tap a word to remove it from the cloud.</p>
+              <p className="text-xs text-gray-400">
+                Tap the words you want to remove, then press Apply. The cloud redraws once.
+              </p>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -353,11 +379,11 @@ export default function WordCloudPage() {
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {modalWords.map(item => {
-                    const isHidden = hiddenWords.has(item.text);
+                    const isHidden = draftHidden.has(item.text);
                     return (
                       <button
                         key={item.text}
-                        onClick={() => toggleHidden(item.text)}
+                        onClick={() => toggleDraft(item.text)}
                         aria-pressed={isHidden}
                         className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
                           isHidden
@@ -386,9 +412,12 @@ export default function WordCloudPage() {
               )}
             </div>
 
-            <div className="px-5 py-4 border-t border-gray-100 shrink-0">
-              <button onClick={() => setShowSettings(false)} className="btn-primary w-full">
-                Done
+            <div className="px-5 py-4 border-t border-gray-100 shrink-0 flex gap-2">
+              <button onClick={() => setShowSettings(false)} className="btn-secondary flex-1">
+                Cancel
+              </button>
+              <button onClick={applySettings} className="btn-primary flex-1">
+                {draftDirty ? `Apply (${draftHidden.size} hidden)` : 'Apply'}
               </button>
             </div>
           </div>
