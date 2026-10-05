@@ -54,7 +54,10 @@ export default function CrisisWarningModal() {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      // items-end on phones so the card grows upward from the bottom edge:
+      // centering an over-tall card clips the overflow off the top, where
+      // there is no way to scroll to it.
+      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4"
       role="presentation"
       onKeyDown={e => { if (e.key === 'Escape') close(); }}
     >
@@ -62,11 +65,14 @@ export default function CrisisWarningModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="crisis-modal-title"
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        // dvh, not vh: on mobile browsers vh includes the strip behind the URL
+        // bar, so 90vh routinely exceeds the visible viewport and the dialog
+        // runs off screen. Full-width sheet on phones, centered card on sm+.
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto overscroll-contain"
       >
         {/* Coral rather than a full alarm red: this is an offer of support.
             rose-900 on rose-50 is ~11:1, well clear of the 4.5:1 floor. */}
-        <div className="bg-rose-50 border-b border-rose-200 rounded-t-2xl p-5 flex items-start gap-3">
+        <div className="bg-rose-50 border-b border-rose-200 rounded-t-2xl p-4 sm:p-5 flex items-start gap-3">
           <LifeBuoy className="text-rose-600 shrink-0 mt-0.5" size={24} aria-hidden="true" />
           <div className="flex-1">
             <h2 id="crisis-modal-title" className="text-rose-900 font-bold text-lg">Support resources</h2>
@@ -79,13 +85,15 @@ export default function CrisisWarningModal() {
               free, confidential, and available 24/7.
             </p>
           </div>
-          <button onClick={close} className="text-rose-900/60 hover:text-rose-900" aria-label="Close">
+          <button onClick={close} className="text-rose-900/60 hover:text-rose-900 shrink-0" aria-label="Close">
             <X size={20} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="p-5">
-          <p className="text-sm text-gray-600">
+        <div className="p-4 sm:p-5">
+          {/* break-words so a long untitled recording name cannot push the
+              dialog wider than the screen */}
+          <p className="text-sm text-gray-600 break-words">
             In video: <span className="font-medium text-gray-800">{alert.videoTitle}</span>
           </p>
 
@@ -94,7 +102,7 @@ export default function CrisisWarningModal() {
               <p className="text-xs font-semibold text-rose-900 uppercase tracking-wide">
                 Words that prompted this
               </p>
-              <p className="text-sm text-rose-900 mt-1">{alert.detectedPhrases.join(', ')}</p>
+              <p className="text-sm text-rose-900 mt-1 break-words">{alert.detectedPhrases.join(', ')}</p>
               <p className="text-xs text-rose-900/70 mt-2">
                 This isn't always right. If it picked up something you didn't mean that
                 way, select Ignore at the end of this screen.
