@@ -1,6 +1,9 @@
 // Frequency calculation service — ported from mobile frequencyCalculation.ts and ngramExtractor.tsx
 // Runs server-side so the client never needs the heavy computation
-import { PorterStemmer } from 'natural';
+//
+// Counting rule: one count per spoken word, exactly as said. Word forms are NOT
+// merged — "ache" and "aching" are separate entries — and a word is never
+// counted twice for also being a medical term.
 
 export interface FrequencyMap {
   [key: string]: number;
@@ -60,6 +63,21 @@ const INTENSITY_MODIFIERS = {
         'slight', 'mild', 'minor', 'minimal'],
 };
 
+// ── Tokenizing ────────────────────────────────────────────────────────────────
+/**
+ * Lowercase, drop punctuation, split on whitespace. Both the word pass and the
+ * medical-phrase pass run on this, so punctuation can never make the two
+ * disagree.
+ */
+function tokenize(transcript: string): string[] {
+  return transcript
+    .toLowerCase()
+    .replace(/[^a-z0-9\s'-]/g, '')
+    .split(/\s+/)
+    .map(w => w.replace(/^['-]+|['-]+$/g, ''))
+    .filter(Boolean);
+}
+
 // ── N-gram extraction ─────────────────────────────────────────────────────────
 function getIntensityCategory(modifier: string): 'high' | 'moderate' | 'low' | null {
   if (INTENSITY_MODIFIERS.high.includes(modifier)) return 'high';
@@ -68,10 +86,17 @@ function getIntensityCategory(modifier: string): 'high' | 'moderate' | 'low' | n
   return null;
 }
 
-function extractMedicalPhrases(text: string): { phrase: string; intensity?: string }[] {
-  const words = text.toLowerCase().split(/\s+/);
-  const results: { phrase: string; intensity?: string }[] = [];
+/**
+ * Find medical phrases that say MORE than the bare word already counted:
+ * a modifier plus a symptom ("severe pain"), or a multi-word symptom
+ * ("back pain"). A lone "pain" is deliberately NOT returned — it is already in
+ * the word counts, and returning it here is what used to double every medical
+ * word.
+ */
+function extractMedicalPhrases(words: string[]): string[] {
+  const results: string[] = [];
 
+  // Longest first, so "a lot of" wins over "a bit" and "back pain" over "pain".
   const allModifiers = [
     ...INTENSITY_MODIFIERS.high,
     ...INTENSITY_MODIFIERS.moderate,
@@ -99,32 +124,33 @@ function extractMedicalPhrases(text: string): { phrase: string; intensity?: stri
 
     if (!symptomMatch) continue;
 
+    // Nearest modifier in the five words before the symptom. Taking the nearest
+    // (rather than every match) keeps the phrase in the order it was spoken —
+    // "a really terrible headache" used to come out as "terrible really headache".
     const lookbackStart = Math.max(0, i - 5);
     const precedingWords = words.slice(lookbackStart, i);
-    const foundModifiers: string[] = [];
+    let nearest: { modifier: string; at: number } | null = null;
 
     for (const modifier of allModifiers) {
       const modWords = modifier.split(' ');
       for (let j = 0; j <= precedingWords.length - modWords.length; j++) {
         if (modWords.every((mw, k) => precedingWords[j + k] === mw)) {
-          foundModifiers.push(modifier);
+          if (!nearest || j > nearest.at) nearest = { modifier, at: j };
           break;
         }
       }
     }
 
-    const phrase = [...foundModifiers.flatMap(m => m.split(' ')), ...symptomMatch.split(' ')].join(' ');
-    let intensity: string | undefined;
-    for (const modifier of foundModifiers) {
-      const cat = getIntensityCategory(modifier);
-      if (cat) { intensity = cat; break; }
+    const multiWordSymptom = symptomMatch.split(' ').length > 1;
+    if (nearest) {
+      results.push(`${nearest.modifier} ${symptomMatch}`);
+    } else if (multiWordSymptom) {
+      results.push(symptomMatch);
     }
-
-    results.push({ phrase, intensity });
-
-    if (intensity) {
-      results.push({ phrase: `${intensity}_${symptomMatch}`, intensity });
-    }
+    // No bare single-word symptom, and no synthetic "high_pain" / "low_pain"
+    // keys: those were internal intensity labels that nothing consumed, yet
+    // they surfaced in the bar graph, word cloud and word dropdown as if a
+    // participant had said them.
 
     i = symptomEndIndex;
   }
@@ -141,42 +167,25 @@ function extractMedicalPhrases(text: string): { phrase: string; intensity?: stri
 export function processTranscriptToFrequency(transcript: string, minCount = 1): FrequencyMap {
   if (!transcript || transcript.trim() === '') return {};
 
-  // stem → total count
-  const stemCounts: Record<string, number> = {};
-  // stem → { original word → how many times that original appeared }
-  const stemOriginals: Record<string, Record<string, number>> = {};
-
-  const words = transcript.toLowerCase().replace(/[^a-z0-9\s'-]/g, '').split(/\s+/);
-
-  // Basic word frequency — grouped by stem
-  for (const word of words) {
-    const cleaned = word.replace(/^['-]+|['-]+$/g, '');
-    if (!cleaned || cleaned.length < 2 || STOP_WORDS.has(cleaned)) continue;
-
-    const stem = PorterStemmer.stem(cleaned);
-    stemCounts[stem] = (stemCounts[stem] || 0) + 1;
-    if (!stemOriginals[stem]) stemOriginals[stem] = {};
-    stemOriginals[stem][cleaned] = (stemOriginals[stem][cleaned] || 0) + 1;
-  }
-
-  // Use the most-frequently occurring original word as the display key for each stem group
-  // e.g. "pain"×3 + "painful"×1 → key "pain" with count 4
+  const words = tokenize(transcript);
   const freq: FrequencyMap = {};
-  for (const [stem, count] of Object.entries(stemCounts)) {
-    const displayWord = Object.entries(stemOriginals[stem])
-      .sort((a, b) => b[1] - a[1])[0][0];
-    freq[displayWord] = (freq[displayWord] || 0) + count;
+
+  // One count per spoken word. Word forms stay separate on purpose: "ache" and
+  // "aching" are different entries, so every number here is traceable straight
+  // back to the transcript.
+  for (const word of words) {
+    if (word.length < 2 || STOP_WORDS.has(word)) continue;
+    freq[word] = (freq[word] || 0) + 1;
   }
 
-  // Medical n-gram phrases
-  const phrases = extractMedicalPhrases(transcript);
-  for (const { phrase } of phrases) {
-    if (phrase && !STOP_WORDS.has(phrase)) {
+  // Medical phrases are additional keys ("back pain", "severe pain"); they never
+  // inflate the single-word counts above.
+  for (const phrase of extractMedicalPhrases(words)) {
+    if (!STOP_WORDS.has(phrase)) {
       freq[phrase] = (freq[phrase] || 0) + 1;
     }
   }
 
-  // Filter by minimum count and remove 'hesitation'
   const filtered: FrequencyMap = {};
   for (const [word, count] of Object.entries(freq)) {
     if (count >= minCount && word.toLowerCase() !== 'hesitation') {
@@ -200,29 +209,36 @@ export function combineFrequencyMaps(freqMaps: FrequencyData[]): Map<string, num
   return combined;
 }
 
-export function formatForBarGraph(freqMaps: FrequencyData[]): { data: Array<{ text: string; value: number }> } {
-  const combined = combineFrequencyMaps(freqMaps);
-  const data = Array.from(combined.entries())
-    .map(([text, value]) => ({ text, value }))
-    .filter(item => item.text && item.text.toLowerCase() !== 'hesitation')
-    .sort((a, b) => b.value - a.value);
-  return { data };
-}
-
-export function formatForWordCloud(freqMaps: FrequencyData[]): Array<{ text: string; value: number }> {
+/**
+ * minCount is applied to the SET-WIDE total, not to each video first. Filtering
+ * per video dropped a word said once per entry however many entries it appeared
+ * in — "physio", once a day for five days, vanished at the default minCount of
+ * 2 — and it also shrank the totals of the words that did survive.
+ */
+function combinedRows(freqMaps: FrequencyData[], minCount: number) {
   const combined = combineFrequencyMaps(freqMaps);
   return Array.from(combined.entries())
     .map(([text, value]) => ({ text, value }))
     .filter(item => item.text && item.text.toLowerCase() !== 'hesitation')
-    .sort((a, b) => b.value - a.value);
+    .filter(item => item.value >= minCount);
 }
 
-export function getWordListForDropdown(freqMaps: FrequencyData[]): Array<{ text: string; value: number }> {
-  const combined = combineFrequencyMaps(freqMaps);
-  return Array.from(combined.entries())
-    .map(([text, value]) => ({ text, value }))
-    .filter(item => item.text && item.text.toLowerCase() !== 'hesitation')
-    .sort((a, b) => a.text.localeCompare(b.text));
+export function formatForBarGraph(
+  freqMaps: FrequencyData[], minCount = 1,
+): { data: Array<{ text: string; value: number }> } {
+  return { data: combinedRows(freqMaps, minCount).sort((a, b) => b.value - a.value) };
+}
+
+export function formatForWordCloud(
+  freqMaps: FrequencyData[], minCount = 1,
+): Array<{ text: string; value: number }> {
+  return combinedRows(freqMaps, minCount).sort((a, b) => b.value - a.value);
+}
+
+export function getWordListForDropdown(
+  freqMaps: FrequencyData[], minCount = 1,
+): Array<{ text: string; value: number }> {
+  return combinedRows(freqMaps, minCount).sort((a, b) => a.text.localeCompare(b.text));
 }
 
 export function calculateLineGraphData(freqMaps: FrequencyData[], word: string) {

@@ -158,18 +158,16 @@ export async function getFrequencyData(req: Request, res: Response) {
     isTranscribed: true,
   });
 
+  // Maps are passed through unfiltered; minCount is applied to the combined
+  // set-wide totals inside the format helpers. Filtering each video first both
+  // hid words that were frequent across the set and understated the totals of
+  // the words that survived.
   const freqMaps: FrequencyData[] = videos
     .filter(v => v.frequencyData)
     .map(v => {
       try {
-        const raw = JSON.parse(v.frequencyData) as Record<string, number>;
-        // Apply minCount filter
-        const filtered: Record<string, number> = {};
-        for (const [word, count] of Object.entries(raw)) {
-          if (count >= minCount) filtered[word] = count;
-        }
         return {
-          map: filtered,
+          map: JSON.parse(v.frequencyData) as Record<string, number>,
           datetime: v.datetimeRecorded.toISOString(),
           videoID: v._id.toString(),
         };
@@ -179,9 +177,9 @@ export async function getFrequencyData(req: Request, res: Response) {
     })
     .filter((x): x is FrequencyData => x !== null);
 
-  const barData = formatForBarGraph(freqMaps);
-  const wordCloudData = formatForWordCloud(freqMaps);
-  const wordList = getWordListForDropdown(freqMaps);
+  const barData = formatForBarGraph(freqMaps, minCount);
+  const wordCloudData = formatForWordCloud(freqMaps, minCount);
+  const wordList = getWordListForDropdown(freqMaps, minCount);
 
   res.json({ barData, wordCloudData, wordList, freqMaps });
 }
