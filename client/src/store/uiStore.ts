@@ -39,7 +39,13 @@ export const useUIStore = create<UIStore>((set) => ({
   setLoading: (loading, message = '') => set({ isLoading: loading, loadingMessage: message }),
 
   addCrisisAlert: (alert) =>
-    set(state => ({ crisisAlerts: [...state.crisisAlerts, alert] })),
+    set(state =>
+      // A video can be flagged once per transcription but reopened from several
+      // places; never queue the same video twice.
+      state.crisisAlerts.some(a => a.videoId === alert.videoId)
+        ? state
+        : { crisisAlerts: [...state.crisisAlerts, alert] },
+    ),
 
   dismissCrisisAlert: (videoId) =>
     set(state => ({ crisisAlerts: state.crisisAlerts.filter(a => a.videoId !== videoId) })),

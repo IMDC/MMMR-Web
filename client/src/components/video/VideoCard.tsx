@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, CheckSquare, Square, AlertTriangle, Loader2, Tag, Clapperboard, Play, Plus, X, Check, Pencil, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Trash2, CheckSquare, Square, LifeBuoy, Loader2, Tag, Clapperboard, Play, Plus, X, Check, Pencil, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Video } from '../../types';
 import { useVideoStore } from '../../store/videoStore';
 import { emotionOptions } from '../../constants/referenceData';
 import { useVideoSetStore } from '../../store/videoSetStore';
+import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import SentimentBadge from '../common/SentimentBadge';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -23,6 +24,7 @@ interface Props {
 export default function VideoCard({ video, selectable, selected, onSelect, inSet, readOnly }: Props) {
   const navigate = useNavigate();
   const { deleteVideo, updateVideo, transcriptionJobs } = useVideoStore();
+  const addCrisisAlert = useUIStore(s => s.addCrisisAlert);
   const { videoSets, fetchSets, addVideosToSet, createSet } = useVideoSetStore();
   const isTranscribing = transcriptionJobs.has(video._id);
   const user = useAuthStore(s => s.user);
@@ -149,6 +151,10 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
 
   const hasMarkups = emotionEmojis.length > 0 || painCategory !== null;
 
+  // A dismissed flag leaves no trace on the card — the participant said it was
+  // wrong, so the video looks like any other.
+  const showSupportInfo = video.flagged_for_harm && !video.harmFlagDismissed;
+
   const streamUrl = videosApi.streamUrl(video.filename);
 
   return (
@@ -156,7 +162,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
       <div
         className={`card hover:shadow-md transition-shadow relative overflow-hidden
           ${selected ? 'ring-2 ring-mhmr-olive' : ''}
-          ${video.flagged_for_harm ? 'border-red-200' : ''}`}
+          ${showSupportInfo ? 'border-amber-200' : ''}`}
         onClick={() => selectable ? onSelect?.(video._id, !selected) : undefined}
       >
         {/* Selection checkbox */}
@@ -190,12 +196,24 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
               </div>
             </button>
           )}
-          {/* Crisis flag */}
-          {video.flagged_for_harm && (
-            <div className="absolute top-2 left-2 flex items-center gap-1 bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-              <AlertTriangle size={11} />
-              Crisis flagged
-            </div>
+          {/* Tappable, mirroring the red info icon on Android, so the resources
+              can be reopened long after the recording was made */}
+          {showSupportInfo && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                addCrisisAlert({
+                  videoId: video._id,
+                  videoTitle: video.title,
+                  detectedPhrases: video.detectedPhrases || [],
+                });
+              }}
+              className="absolute top-2 left-2 flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold px-2 py-0.5 rounded-full transition-colors"
+              aria-label={`View support resources for ${video.title}`}
+            >
+              <LifeBuoy size={11} aria-hidden="true" />
+              Support info
+            </button>
           )}
         </div>
 

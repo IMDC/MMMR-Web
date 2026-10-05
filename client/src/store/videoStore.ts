@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useUIStore } from './uiStore';
 import { Video, TranscriptionProgress } from '../types';
 import { videosApi } from '../api/videos';
 
@@ -84,7 +85,22 @@ export const useVideoStore = create<VideoStore>((set, get) => ({
         src.onmessage = (e) => {
           const data = JSON.parse(e.data);
           get().setTranscriptionProgress(videoId, { stage: data.stage, progress: data.progress, message: data.message });
-          if (data.stage === 'complete') { src.close(); resolve(); }
+          if (data.stage === 'complete') {
+            src.close();
+            // Raise the crisis warning here rather than in the calling page, so
+            // every transcription path shows it — the auto-transcribe on
+            // RecordPage as well as the manual button. The flag is read off the
+            // event payload because the DB write and this event are sent
+            // together; waiting for a refetch would race them.
+            if (data.data?.flagged_for_harm) {
+              useUIStore.getState().addCrisisAlert({
+                videoId,
+                videoTitle: get().videos.find(v => v._id === videoId)?.title || 'this recording',
+                detectedPhrases: data.data.detectedPhrases || [],
+              });
+            }
+            resolve();
+          }
           else if (data.stage === 'error') { src.close(); reject(new Error(data.message)); }
         };
         src.onerror = () => { src.close(); reject(new Error('Transcription connection lost')); };

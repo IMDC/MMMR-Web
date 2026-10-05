@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, Tag, MapPin, Heart, Activity, MessageSquare, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Mic, Tag, MapPin, Heart, Activity, MessageSquare, Loader2, LifeBuoy } from 'lucide-react';
 import { format } from 'date-fns';
 import { useVideoStore } from '../store/videoStore';
 import { useUIStore } from '../store/uiStore';
@@ -90,12 +90,17 @@ export default function VideoDetailPage() {
       if (data.stage === 'complete') {
         evtSource.close();
         setTranscribing(false);
-        refreshVideo(id).then(() => {
-          const updated = videos.find(v => v._id === id);
-          if (updated?.flagged_for_harm) {
-            addCrisisAlert({ videoId: id, videoTitle: video.title, detectedPhrases: data.data?.detectedPhrases || [] });
-          }
-        });
+        // The flag comes off the event payload, not a refetched document: the
+        // old code read it from the `videos` array captured at render time,
+        // which still held the pre-transcription copy with the flag unset.
+        if (data.data?.flagged_for_harm) {
+          addCrisisAlert({
+            videoId: id,
+            videoTitle: video.title,
+            detectedPhrases: data.data.detectedPhrases || [],
+          });
+        }
+        refreshVideo(id);
       } else if (data.stage === 'error') {
         evtSource.close();
         setTranscribing(false);
@@ -151,12 +156,28 @@ export default function VideoDetailPage() {
         <div className="p-4 md:w-[55%] md:shrink-0 md:flex md:flex-col md:justify-start md:overflow-hidden">
           <VideoPlayer filename={video.filename} knownDuration={video.duration} />
 
-          {video.flagged_for_harm && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mt-4">
-              <AlertTriangle className="text-red-500 shrink-0" size={18} />
-              <p className="text-red-700 text-sm font-medium">
-                This recording has been flagged for potentially concerning content.
+          {video.flagged_for_harm && !video.harmFlagDismissed && (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+              <LifeBuoy className="text-amber-700 shrink-0" size={18} aria-hidden="true" />
+              <p className="text-amber-900 text-sm font-medium flex-1">
+                Support resources are available for this recording.
               </p>
+              <button
+                onClick={() => addCrisisAlert({
+                  videoId: video._id,
+                  videoTitle: video.title,
+                  detectedPhrases: video.detectedPhrases || [],
+                })}
+                className="text-amber-900 text-sm font-semibold underline shrink-0 hover:text-amber-950"
+              >
+                View
+              </button>
+              <button
+                onClick={() => updateVideo(video._id, { harmFlagDismissed: true })}
+                className="text-amber-900/70 text-sm shrink-0 underline hover:text-amber-900"
+              >
+                Ignore
+              </button>
             </div>
           )}
         </div>

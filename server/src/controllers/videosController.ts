@@ -63,6 +63,10 @@ export async function updateVideo(req: Request, res: Response) {
   const allowed = [
     'title', 'keywords', 'locations', 'emotionStickers', 'painKeyword',
     'numericPainScale', 'textComments', 'bulletPointsLocked',
+    // Dismissing a wrong crisis flag. Note the whitelist deliberately does NOT
+    // include flagged_for_harm or detectedPhrases — the client can hide the
+    // warning but never overwrite the detection result itself.
+    'harmFlagDismissed',
   ];
   const updates: Record<string, any> = {};
   for (const key of allowed) {
@@ -123,6 +127,7 @@ export async function transcribeVideoById(req: Request, res: Response) {
       message: 'Already transcribed',
       transcript: video.transcript,
       flagged_for_harm: video.flagged_for_harm,
+      detectedPhrases: video.detectedPhrases,
       frequencyData: video.frequencyData,
     });
   }
@@ -134,6 +139,7 @@ export async function transcribeVideoById(req: Request, res: Response) {
       transcript: result.transcript,
       isTranscribed: true,
       flagged_for_harm: result.crisisResult.flagged,
+      detectedPhrases: result.crisisResult.detectedPhrases,
       frequencyData: JSON.stringify(result.frequencyData),
       ...(result.videoSummary ? { videoSummary: result.videoSummary } : {}),
       ...(result.videoTopics?.length ? { videoTopics: result.videoTopics } : {}),
@@ -173,6 +179,7 @@ export async function transcriptionStatus(req: Request, res: Response) {
       transcript: result.transcript,
       isTranscribed: true,
       flagged_for_harm: result.crisisResult.flagged,
+      detectedPhrases: result.crisisResult.detectedPhrases,
       frequencyData: JSON.stringify(result.frequencyData),
       ...(result.videoSummary ? { videoSummary: result.videoSummary } : {}),
       ...(result.videoTopics?.length ? { videoTopics: result.videoTopics } : {}),

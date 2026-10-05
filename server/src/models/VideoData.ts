@@ -20,6 +20,8 @@ export interface IVideoData extends Omit<Document, 'isSelected'> {
   tsOutputSentence: string;
   bulletSentiments: string;  // JSON string
   flagged_for_harm: boolean;
+  detectedPhrases: string[];
+  harmFlagDismissed: boolean;
   frequencyData: string;     // JSON string FrequencyMap
   bulletPointsLocked: boolean;
   videoSummary: string;
@@ -47,6 +49,13 @@ const VideoDataSchema = new Schema<IVideoData>(
     tsOutputSentence: { type: String, default: '' },
     bulletSentiments: { type: String, default: '' },
     flagged_for_harm: { type: Boolean, default: false },
+    // The matched crisis keywords, kept so the warning dialog can be
+    // reopened from a flagged video without re-running detection.
+    detectedPhrases: { type: [String], default: [] },
+    // Set when the participant says the flag was wrong. The detection result
+    // above is deliberately left intact so the study can still measure how
+    // often the detector was wrong; only the UI treats the video as normal.
+    harmFlagDismissed: { type: Boolean, default: false },
     frequencyData: { type: String, default: '' },
     bulletPointsLocked: { type: Boolean, default: false },
     videoSummary: { type: String, default: '' },

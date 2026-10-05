@@ -20,6 +20,8 @@ export interface Video {
   tsOutputSentence: string;
   bulletSentiments: string;
   flagged_for_harm: boolean;
+  detectedPhrases: string[];
+  harmFlagDismissed: boolean;
   frequencyData: string;
   bulletPointsLocked: boolean;
   videoSummary: string;

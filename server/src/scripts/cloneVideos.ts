@@ -46,8 +46,8 @@ const COPY_FIELDS = [
   'title', 'datetimeRecorded', 'duration', 'textComments', 'locations',
   'emotionStickers', 'keywords', 'painKeyword', 'numericPainScale',
   'isTranscribed', 'transcript', 'sentiment', 'biasAdjustedSentiment',
-  'tsOutputBullet', 'tsOutputSentence', 'bulletSentiments', 'flagged_for_harm',
-  'frequencyData', 'bulletPointsLocked', 'videoSummary', 'videoTopics',
+  'tsOutputBullet', 'tsOutputSentence', 'bulletSentiments', 'flagged_for_harm', 'detectedPhrases',
+  'harmFlagDismissed', 'frequencyData', 'bulletPointsLocked', 'videoSummary', 'videoTopics',
 ] as const;
 
 async function run() {

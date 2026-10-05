@@ -16,6 +16,7 @@ export type TranscriptionStage =
   | 'whisper_done'
   | 'crisis_check'
   | 'frequency_analysis'
+  | 'finalizing'
   | 'complete'
   | 'error';
 
@@ -97,7 +98,11 @@ export async function transcribeVideo(
     // Step 5: Quick AI summary (lightweight, non-blocking if it fails)
     const summaryResult = await generateVideoSummary(transcript).catch(() => null);
 
-    emit('complete', 100, 'Processing complete');
+    // Not 'complete': the SSE controller sends that itself once the results are
+    // persisted, and its event is the one carrying the crisis payload. Emitting
+    // 'complete' here too made clients close the stream on this first event and
+    // never receive the second.
+    emit('finalizing', 95, 'Finishing up...');
 
     return {
       transcript,
