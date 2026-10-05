@@ -334,7 +334,7 @@ export default function WordCloudPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="cloud-settings-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85dvh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">

@@ -208,7 +208,7 @@ export default function DataAnalysisPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="consent-modal-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <h2 id="consent-modal-title" className="font-bold text-gray-800 mb-2">Use AI for Text Report?</h2>

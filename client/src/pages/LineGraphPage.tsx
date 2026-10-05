@@ -529,7 +529,7 @@ export default function LineGraphPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="compare-words-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[75vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[75dvh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="px-5 py-4 border-b border-gray-100 shrink-0">

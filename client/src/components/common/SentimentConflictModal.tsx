@@ -15,7 +15,7 @@ export default function SentimentConflictModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="sentiment-conflict-title"
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full"
+        className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto"
       >
         {/* Header */}
         <div className="bg-mhmr-olive rounded-t-2xl p-5 flex items-center gap-3">

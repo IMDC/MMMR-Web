@@ -458,7 +458,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             role="dialog"
             aria-modal="true"
             aria-labelledby="summary-picker-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -547,7 +547,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
             role="dialog"
             aria-modal="true"
             aria-labelledby="videocard-addset-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}

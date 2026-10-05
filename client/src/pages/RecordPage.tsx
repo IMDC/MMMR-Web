@@ -631,7 +631,7 @@ export default function RecordPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="recording-info-title"
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col gap-5 relative"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col gap-5 relative max-h-[90dvh] overflow-y-auto"
           >
             <button
               onClick={() => { setShowRecordingInfo(false); navigate('/'); }}
@@ -673,7 +673,7 @@ export default function RecordPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="autotranscribe-title"
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col items-center gap-5"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col items-center gap-5 max-h-[90dvh] overflow-y-auto"
           >
             <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
               <Zap size={32} className="text-blue-500" />
@@ -719,7 +719,7 @@ export default function RecordPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="postsave-title"
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col items-center gap-6 relative"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7 flex flex-col items-center gap-6 relative max-h-[90dvh] overflow-y-auto"
           >
             {/* Close button */}
             <button
@@ -825,7 +825,7 @@ export default function RecordPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="record-addset-title"
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[90dvh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">

@@ -54,7 +54,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-title"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[90dvh] overflow-y-auto"
       >
         {/* Step 1 — Display name */}
         {step === 1 && (
