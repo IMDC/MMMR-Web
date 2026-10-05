@@ -162,7 +162,7 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
       <div
         className={`card hover:shadow-md transition-shadow relative overflow-hidden
           ${selected ? 'ring-2 ring-mhmr-olive' : ''}
-          ${showSupportInfo ? 'border-amber-200' : ''}`}
+          ${showSupportInfo ? 'border-rose-200' : ''}`}
         onClick={() => selectable ? onSelect?.(video._id, !selected) : undefined}
       >
         {/* Selection checkbox */}
@@ -208,11 +208,11 @@ export default function VideoCard({ video, selectable, selected, onSelect, inSet
                   detectedPhrases: video.detectedPhrases || [],
                 });
               }}
-              className="absolute top-2 left-2 flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold px-2 py-0.5 rounded-full transition-colors"
-              aria-label={`View support resources for ${video.title}`}
+              className="absolute top-2 left-2 flex items-center gap-1 bg-rose-100 hover:bg-rose-200 text-rose-900 text-xs font-semibold px-2 py-0.5 rounded-full transition-colors"
+              aria-label={`Support flag — view support resources for ${video.title}`}
             >
               <LifeBuoy size={11} aria-hidden="true" />
-              Support info
+              Support flag
             </button>
           )}
         </div>

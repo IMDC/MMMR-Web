@@ -157,9 +157,9 @@ export default function VideoDetailPage() {
           <VideoPlayer filename={video.filename} knownDuration={video.duration} />
 
           {video.flagged_for_harm && !video.harmFlagDismissed && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
-              <LifeBuoy className="text-amber-700 shrink-0" size={18} aria-hidden="true" />
-              <p className="text-amber-900 text-sm font-medium flex-1">
+            <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg p-3 mt-4">
+              <LifeBuoy className="text-rose-600 shrink-0" size={18} aria-hidden="true" />
+              <p className="text-rose-900 text-sm font-medium flex-1">
                 Support resources are available for this recording.
               </p>
               <button
@@ -168,13 +168,13 @@ export default function VideoDetailPage() {
                   videoTitle: video.title,
                   detectedPhrases: video.detectedPhrases || [],
                 })}
-                className="text-amber-900 text-sm font-semibold underline shrink-0 hover:text-amber-950"
+                className="text-rose-900 text-sm font-semibold underline shrink-0 hover:text-rose-950"
               >
                 View
               </button>
               <button
                 onClick={() => updateVideo(video._id, { harmFlagDismissed: true })}
-                className="text-amber-900/70 text-sm shrink-0 underline hover:text-amber-900"
+                className="text-rose-900/70 text-sm shrink-0 underline hover:text-rose-900"
               >
                 Ignore
               </button>

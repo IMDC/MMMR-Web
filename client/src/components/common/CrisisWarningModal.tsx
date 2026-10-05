@@ -64,19 +64,22 @@ export default function CrisisWarningModal() {
         aria-labelledby="crisis-modal-title"
         className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
       >
-        {/* Amber, not red: this is an offer of support, not an alarm. amber-900
-            on amber-50 is ~10:1, well clear of the 4.5:1 floor. */}
-        <div className="bg-amber-50 border-b border-amber-200 rounded-t-2xl p-5 flex items-start gap-3">
-          <LifeBuoy className="text-amber-700 shrink-0 mt-0.5" size={24} aria-hidden="true" />
+        {/* Coral rather than a full alarm red: this is an offer of support.
+            rose-900 on rose-50 is ~11:1, well clear of the 4.5:1 floor. */}
+        <div className="bg-rose-50 border-b border-rose-200 rounded-t-2xl p-5 flex items-start gap-3">
+          <LifeBuoy className="text-rose-600 shrink-0 mt-0.5" size={24} aria-hidden="true" />
           <div className="flex-1">
-            <h2 id="crisis-modal-title" className="text-amber-900 font-bold text-lg">Support resources</h2>
-            <p className="text-amber-900/80 text-sm mt-1">
-              Parts of this recording sounded like you may be going through a hard time.
-              If you'd like to talk to someone, these services are free, confidential,
-              and available 24/7.
+            <h2 id="crisis-modal-title" className="text-rose-900 font-bold text-lg">Support resources</h2>
+            {/* Describes what the detector did, rather than telling the person
+                how they feel — the previous wording inferred a state of mind
+                from a keyword match. */}
+            <p className="text-rose-900/80 text-sm mt-1">
+              This recording matched a word we attach support resources to. It may not
+              apply to you. If you would like to talk to someone, these services are
+              free, confidential, and available 24/7.
             </p>
           </div>
-          <button onClick={close} className="text-amber-900/60 hover:text-amber-900" aria-label="Close">
+          <button onClick={close} className="text-rose-900/60 hover:text-rose-900" aria-label="Close">
             <X size={20} aria-hidden="true" />
           </button>
         </div>
@@ -87,12 +90,12 @@ export default function CrisisWarningModal() {
           </p>
 
           {alert.detectedPhrases.length > 0 && (
-            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
+            <div className="mt-3 bg-rose-50 border border-rose-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-rose-900 uppercase tracking-wide">
                 Words that prompted this
               </p>
-              <p className="text-sm text-amber-900 mt-1">{alert.detectedPhrases.join(', ')}</p>
-              <p className="text-xs text-amber-900/70 mt-2">
+              <p className="text-sm text-rose-900 mt-1">{alert.detectedPhrases.join(', ')}</p>
+              <p className="text-xs text-rose-900/70 mt-2">
                 This isn't always right. If it picked up something you didn't mean that
                 way, you can ignore it below.
               </p>
@@ -137,7 +140,7 @@ export default function CrisisWarningModal() {
           <div className="flex flex-col sm:flex-row gap-2 mt-5">
             <button onClick={close} className="btn-primary flex-1">Close</button>
             <button onClick={ignore} className="btn-secondary flex-1">
-              This isn't about me — ignore
+              Ignore
             </button>
           </div>
         </div>
