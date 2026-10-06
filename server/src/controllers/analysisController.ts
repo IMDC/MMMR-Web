@@ -10,7 +10,14 @@ import {
   calculateLineGraphData,
   processTranscriptToFrequency,
 } from '../services/frequencyService';
-import { getPainSentiment, getPainBias } from '../services/sentimentService';
+import { getPainSentiment, getPainBias, SentimentType } from '../services/sentimentService';
+
+interface SentimentConflictPayload {
+  videoId: string;
+  videoTitle: string;
+  userSentiment: SentimentType;
+  aiSentiment: SentimentType;
+}
 
 export async function analyzeVideo(req: Request, res: Response) {
   const { videoId, skipTextReports } = req.body;
@@ -68,6 +75,7 @@ export async function analyzeVideo(req: Request, res: Response) {
     conflictDetected: result.weightedSentiment.conflictDetected,
     userSentiment: result.weightedSentiment.userSentiment,
     aiSentiment: result.weightedSentiment.aiSentiment,
+    videoTitle: video.title,
   });
 }
 
@@ -83,6 +91,10 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
   // Analyze each video individually so tsOutputBullet / tsOutputSentence / sentiment
   // are written to VideoData — mirrors the Android per-video analysis flow.
   let didAnalyzeNew = false;
+  // Each video's own AI-vs-markup difference is detected here and nowhere else —
+  // the set-level aggregate mixes every video's stickers together, so only these
+  // per-video results can name a video in the alert.
+  const conflicts: SentimentConflictPayload[] = [];
   for (const video of videos) {
     if (!video.transcript?.trim()) continue;
     if (!forceAll && video.bulletPointsLocked) continue;
@@ -101,6 +113,14 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
         bulletSentiments: JSON.stringify(perVideo.weightedSentiment.bulletSentiments),
         bulletPointsLocked: true,
       });
+      if (perVideo.weightedSentiment.conflictDetected) {
+        conflicts.push({
+          videoId: String(video._id),
+          videoTitle: video.title,
+          userSentiment: perVideo.weightedSentiment.userSentiment,
+          aiSentiment: perVideo.weightedSentiment.aiSentiment,
+        });
+      }
       // Update local reference so set-level aggregation uses fresh data
       video.sentiment = perVideo.weightedSentiment.overallSentiment;
       didAnalyzeNew = true;
@@ -119,6 +139,7 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
       sentiment: set.sentiment,
       bulletSentiments: set.bulletSentiments ? JSON.parse(set.bulletSentiments as unknown as string) : [],
       conflictDetected: false,
+      conflicts: [],
     });
   }
 
@@ -142,6 +163,7 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
     sentiment: result.weightedSentiment.overallSentiment,
     bulletSentiments: result.weightedSentiment.bulletSentiments,
     conflictDetected: result.weightedSentiment.conflictDetected,
+    conflicts,
   });
 }
 

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { SentimentType } from '../types';
 
 interface SentimentConflict {
+  videoId?: string;
   videoTitle: string;
   userSentiment: SentimentType;
   aiSentiment: SentimentType;
@@ -51,7 +52,13 @@ export const useUIStore = create<UIStore>((set) => ({
     set(state => ({ crisisAlerts: state.crisisAlerts.filter(a => a.videoId !== videoId) })),
 
   addSentimentConflict: (conflict) =>
-    set(state => ({ sentimentConflicts: [...state.sentimentConflicts, conflict] })),
+    set(state =>
+      // Re-running analysis on a set re-reports every conflict in it; never queue
+      // the same video twice.
+      conflict.videoId && state.sentimentConflicts.some(c => c.videoId === conflict.videoId)
+        ? state
+        : { sentimentConflicts: [...state.sentimentConflicts, conflict] },
+    ),
 
   dismissSentimentConflict: () =>
     set(state => ({ sentimentConflicts: state.sentimentConflicts.slice(1) })),

@@ -1,6 +1,24 @@
 import { create } from 'zustand';
 import { FrequencyPoint, BulletSentiment } from '../types';
 import { analysisApi } from '../api/analysis';
+import { useUIStore } from './uiStore';
+
+// Raised here rather than in the calling page, so every analysis path shows the
+// alert — the Reports set-level run as well as any single-video call. The
+// sentiments are read off the response because they are computed during analysis
+// and never stored on the video.
+function raiseConflicts(
+  conflicts: Array<{ videoId?: string; videoTitle?: string; userSentiment: any; aiSentiment: any }>,
+) {
+  for (const c of conflicts) {
+    useUIStore.getState().addSentimentConflict({
+      videoId: c.videoId,
+      videoTitle: c.videoTitle || 'this recording',
+      userSentiment: c.userSentiment,
+      aiSentiment: c.aiSentiment,
+    });
+  }
+}
 
 interface FrequencyData {
   barData: { data: FrequencyPoint[] };
@@ -49,6 +67,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     set({ isAnalyzing: true });
     try {
       const result = await analysisApi.analyzeVideo(videoId, skipTextReports);
+      if (result?.conflictDetected) raiseConflicts([{ ...result, videoId }]);
       return result;
     } finally {
       set({ isAnalyzing: false });
@@ -59,6 +78,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     set({ isAnalyzing: true, lastAnalyzedSetId: videoSetId });
     try {
       const result = await analysisApi.analyzeVideoSet(videoSetId, forceAll);
+      if (result?.conflicts?.length) raiseConflicts(result.conflicts);
       // Invalidate frequency cache for this set
       get().clearCache(videoSetId);
       return result;
