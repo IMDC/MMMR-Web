@@ -130,9 +130,13 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
     }
   }
 
-  // If nothing new was analyzed (all videos already locked) and this isn't a force-all,
-  // skip the expensive set-level GPT call and return the existing summary.
-  if (!didAnalyzeNew && !forceAll) {
+  // If nothing new was analyzed (all videos already locked) and this isn't a
+  // force-all, skip the expensive set-level GPT call and return the existing
+  // summary — but only if there IS one. A new set built from already-analyzed
+  // videos has no summary of its own, and returning the empty one left the
+  // report page saying the summary had not been generated, with no way to ask
+  // for it short of Regenerate.
+  if (!didAnalyzeNew && !forceAll && set.isSummaryGenerated) {
     return res.json({
       summaryAnalysisBullet: set.summaryAnalysisBullet,
       summaryAnalysisSentence: set.summaryAnalysisSentence,
