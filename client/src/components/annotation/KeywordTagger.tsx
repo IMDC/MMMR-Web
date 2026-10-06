@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Ban } from 'lucide-react';
 import { keywordRef } from '../../constants/referenceData';
 import { ReferenceItem } from '../../types';
 
@@ -8,14 +8,19 @@ interface Props {
   onChange: (value: string[]) => void;
 }
 
+// 'None' is an action, not a keyword: it clears the selection instead of being stored.
+const NONE_ID = 'kw_1';
+
 export default function KeywordTagger({ value, onChange }: Props) {
   const [items, setItems] = useState<ReferenceItem[]>(() => {
     const parsed = value.map(v => { try { return JSON.parse(v); } catch { return null; } }).filter(Boolean);
     const predefinedIds = new Set(keywordRef.map(r => r.id));
-    const predefined = keywordRef.map(ref => ({
-      ...ref,
-      checked: parsed.some((p: any) => p?.title === ref.title && p?.checked),
-    }));
+    const predefined = keywordRef
+      .filter(ref => ref.id !== NONE_ID)
+      .map(ref => ({
+        ...ref,
+        checked: parsed.some((p: any) => p?.title === ref.title && p?.checked),
+      }));
     const custom: ReferenceItem[] = parsed
       .filter((p: any) => p?.id && !predefinedIds.has(p.id))
       .map((p: any) => ({ ...p, checked: true }));
@@ -24,12 +29,19 @@ export default function KeywordTagger({ value, onChange }: Props) {
 
   const [customInput, setCustomInput] = useState('');
 
+  const nothingSelected = !items.some(i => i.checked);
+
   const toggle = (id: string) => {
     const updated = items.map(item =>
       item.id === id ? { ...item, checked: !item.checked } : item,
     );
     setItems(updated);
     onChange(updated.filter(i => i.checked).map(i => JSON.stringify(i)));
+  };
+
+  const clearAll = () => {
+    setItems(items.map(item => ({ ...item, checked: false })));
+    onChange([]);
   };
 
   const addCustom = () => {
@@ -44,17 +56,36 @@ export default function KeywordTagger({ value, onChange }: Props) {
 
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-2">Select all that apply:</p>
+      <p className="text-xs text-gray-500 mb-2">
+        Select all that apply, or choose None to clear every keyword:
+      </p>
       <div className="flex flex-wrap gap-2 mb-3">
         {items.map(item => (
           <button
             key={item.id}
             onClick={() => toggle(item.id)}
+            aria-pressed={item.checked}
             className={item.checked ? 'tag-pill' : 'tag-pill-inactive'}
           >
             {item.title}
           </button>
         ))}
+      </div>
+      <div className="flex items-center gap-2 mb-3 pt-3 border-t border-gray-100">
+        <button
+          onClick={clearAll}
+          aria-pressed={nothingSelected}
+          className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-medium border transition-colors
+            ${nothingSelected
+              ? 'bg-gray-700 text-white border-gray-700'
+              : 'bg-white text-gray-700 border-gray-300 border-dashed hover:bg-gray-700 hover:text-white hover:border-gray-700'}`}
+        >
+          <Ban size={13} aria-hidden="true" />
+          None
+        </button>
+        <span className="text-xs text-gray-500">
+          {nothingSelected ? 'No keywords selected' : `${items.filter(i => i.checked).length} selected`}
+        </span>
       </div>
       <div className="flex gap-2">
         <input
