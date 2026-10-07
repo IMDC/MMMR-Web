@@ -64,6 +64,7 @@ export async function analyzeVideo(req: Request, res: Response) {
     biasAdjustedSentiment: result.weightedSentiment.overallSentiment,
     bulletSentiments: JSON.stringify(result.weightedSentiment.bulletSentiments),
     bulletPointsLocked: true,
+    markupsChangedSinceAnalysis: false,
     isTranscribed: true,
   });
 
@@ -112,6 +113,7 @@ export async function analyzeVideoSetSummary(req: Request, res: Response) {
         biasAdjustedSentiment: perVideo.weightedSentiment.overallSentiment,
         bulletSentiments: JSON.stringify(perVideo.weightedSentiment.bulletSentiments),
         bulletPointsLocked: true,
+        markupsChangedSinceAnalysis: false,
       });
       if (perVideo.weightedSentiment.conflictDetected) {
         conflicts.push({

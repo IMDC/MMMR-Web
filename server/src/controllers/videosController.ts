@@ -73,6 +73,24 @@ export async function updateVideo(req: Request, res: Response) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
   }
 
+  // Flag — but never re-run — analysis when a markup that feeds the sentiment
+  // bias or the GPT prompt is edited on an already-analyzed video.
+  if (updates.markupsChangedSinceAnalysis === undefined) {
+    const existing = await VideoData.findOne({ _id: req.params.id, userId: req.userId });
+    if (!existing) return res.status(404).json({ error: 'Video not found' });
+
+    if (existing.bulletPointsLocked) {
+      const changed = (['numericPainScale', 'emotionStickers', 'textComments'] as const).some(key => {
+        if (updates[key] === undefined) return false;
+        const before = key === 'numericPainScale'
+          ? existing.numericPainScale
+          : Array.from((existing[key] as unknown as string[]) || []);
+        return JSON.stringify(updates[key]) !== JSON.stringify(before);
+      });
+      if (changed) updates.markupsChangedSinceAnalysis = true;
+    }
+  }
+
   const video = await VideoData.findOneAndUpdate(
     { _id: req.params.id, userId: req.userId },
     updates,

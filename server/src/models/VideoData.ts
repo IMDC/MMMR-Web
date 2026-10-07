@@ -24,6 +24,7 @@ export interface IVideoData extends Omit<Document, 'isSelected'> {
   harmFlagDismissed: boolean;
   frequencyData: string;     // JSON string FrequencyMap
   bulletPointsLocked: boolean;
+  markupsChangedSinceAnalysis: boolean;
   videoSummary: string;
   videoTopics: string[];
 }
@@ -58,6 +59,12 @@ const VideoDataSchema = new Schema<IVideoData>(
     harmFlagDismissed: { type: Boolean, default: false },
     frequencyData: { type: String, default: '' },
     bulletPointsLocked: { type: Boolean, default: false },
+    // Set when pain, emotions or text comments are edited after the video has
+    // been analyzed. The stored sentiment then describes markups that no longer
+    // exist, so the UI can say so and point at Regenerate All. Cleared by every
+    // analysis write. Deliberately does NOT trigger re-analysis: a conflict is
+    // an analysis result and only surfaces when analysis runs.
+    markupsChangedSinceAnalysis: { type: Boolean, default: false },
     videoSummary: { type: String, default: '' },
     videoTopics: { type: [String], default: [] },
   },

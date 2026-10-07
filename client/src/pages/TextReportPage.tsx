@@ -120,6 +120,7 @@ export default function TextReportPage() {
   }
 
   const hasReport = !!set.isSummaryGenerated;
+  const staleCount = setVideos.filter(v => v.markupsChangedSinceAnalysis).length;
   const setSummaryBullets = set.summaryAnalysisBullet ? parseBullets(set.summaryAnalysisBullet) : [];
 
   return (
@@ -188,6 +189,14 @@ export default function TextReportPage() {
 
             {hasReport && (
               <div className="mt-4 pt-3 border-t border-gray-100">
+                {staleCount > 0 && (
+                  <p className="text-xs text-gray-600 mb-2">
+                    {staleCount === 1
+                      ? '1 video has had its markups changed since it was analyzed.'
+                      : `${staleCount} videos have had their markups changed since they were analyzed.`}
+                    {' '}Use Regenerate All to bring this report up to date.
+                  </p>
+                )}
                 <button
                   onClick={handleRegenerate}
                   disabled={regenerating}

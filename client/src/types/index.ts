@@ -24,6 +24,7 @@ export interface Video {
   harmFlagDismissed: boolean;
   frequencyData: string;
   bulletPointsLocked: boolean;
+  markupsChangedSinceAnalysis: boolean;
   videoSummary: string;
   videoTopics: string[];
   createdAt: string;

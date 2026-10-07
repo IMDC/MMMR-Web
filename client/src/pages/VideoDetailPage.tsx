@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic, Tag, MapPin, Heart, Activity, MessageSquare, Loader2, LifeBuoy } from 'lucide-react';
+import { ArrowLeft, Mic, Tag, MapPin, Heart, Activity, MessageSquare, Loader2, LifeBuoy, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { useVideoStore } from '../store/videoStore';
 import { useUIStore } from '../store/uiStore';
@@ -146,6 +146,15 @@ export default function VideoDetailPage() {
           <h1 className="text-white font-bold truncate">{video.title}</h1>
           <p className="text-white/60 text-xs">{format(new Date(video.datetimeRecorded), 'MMM d, yyyy • h:mm a')}</p>
         </div>
+        {video.markupsChangedSinceAnalysis && (
+          <span
+            className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/15 text-white border border-white/40 rounded-full px-2 py-0.5 shrink-0"
+            title="Pain, emotions or comments changed after this video was analyzed"
+          >
+            <RefreshCw size={11} aria-hidden="true" />
+            Markups changed
+          </span>
+        )}
         {video.sentiment && <SentimentBadge sentiment={video.sentiment} />}
       </div>
 
