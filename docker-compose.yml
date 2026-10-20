@@ -34,6 +34,10 @@ services:
   mongodb:
     image: mongo:7
     restart: unless-stopped
+    # Bound to the server's loopback only, so it is not reachable from the
+    # internet. Connect with an SSH tunnel (MongoDB Compass can open its own).
+    ports:
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo_data:/data/db
 
