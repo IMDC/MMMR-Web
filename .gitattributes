@@ -1,0 +1,7 @@
+# Shell scripts must keep LF endings. Git for Windows defaults to
+# core.autocrlf=true, which would rewrite them to CRLF on clone and make bash
+# fail with: $'\r': command not found
+*.sh text eol=lf
+
+# Batch files are the opposite: Windows wants CRLF, and LF can break labels.
+*.bat text eol=crlf
