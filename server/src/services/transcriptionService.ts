@@ -8,6 +8,7 @@ import { extractAudio, cleanupAudio } from './ffmpegService';
 import { detectCrisisContent, CrisisDetectionResult } from './crisisService';
 import { processTranscriptToFrequency, FrequencyMap } from './frequencyService';
 import { generateVideoSummary } from './chatgptService';
+import { toCanadianEnglish } from './canadianSpellingService';
 
 export type TranscriptionStage =
   | 'audio_extraction_start'
@@ -69,7 +70,13 @@ export async function transcribeVideo(
       contentType: 'audio/mpeg',
     });
     formData.append('model', 'whisper-1');
+    // 'en' only — Whisper takes bare ISO-639-1 codes, so there is no 'en-CA'.
     formData.append('language', 'en');
+    // Deliberately NO `prompt` parameter. Whisper treats it as preceding
+    // speech rather than as an instruction, so on a silent or noisy clip it
+    // can transcribe the prompt's own words into a participant's transcript.
+    // A spelling prompt also bought nothing: every word such a prompt would
+    // name is already guaranteed by toCanadianEnglish() below. Do not add one.
 
     const response = await axios.post(
       'https://api.openai.com/v1/audio/transcriptions',
@@ -84,7 +91,11 @@ export async function transcribeVideo(
       },
     );
 
-    const transcript: string = response.data?.text || '';
+    // Re-spell before anything reads the transcript. Crisis detection and
+    // frequency counting both run on the text below, and frequency counts must
+    // trace back to the stored transcript verbatim — so the Canadian form has
+    // to be in place before either of them sees it, not applied afterwards.
+    const transcript: string = toCanadianEnglish(response.data?.text || '');
     emit('whisper_done', 60, 'Transcription complete');
 
     // Step 3: Crisis detection

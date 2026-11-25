@@ -162,6 +162,35 @@ does not reach existing videos until this runs. **Run it after any edit to
 Only `frequencyData` is touched — transcripts, sentiment and analysis output are
 left alone. Pure recomputation: no Whisper, no OpenAI, no cost, idempotent.
 
+### `canadianizeTranscripts.ts` 🟡
+
+Rewrite stored US spellings as Canadian ones.
+
+```bash
+npx tsx src/scripts/canadianizeTranscripts.ts --dry-run    # show what would change
+npx tsx src/scripts/canadianizeTranscripts.ts              # write
+npx tsx src/scripts/canadianizeTranscripts.ts --user anay  # one account
+```
+
+Transcription normalizes spelling as the transcript comes back from Whisper, but
+that is forward-only. Anything recorded before that still says "behavior" and
+"center", and because word forms are never merged, the word cloud would carry
+`behavior` and `behaviour` as two unrelated entries for the rest of the study.
+Run this once after deploying the change.
+
+Per video: `transcript`, `tsOutputBullet`, `tsOutputSentence`,
+`bulletSentiments`, `videoSummary`, `videoTopics`, plus `frequencyData`
+recomputed from the rewritten transcript. Per video set:
+`summaryAnalysisBullet`, `summaryAnalysisSentence`, `bulletSentiments`.
+
+No Whisper, no OpenAI, no cost. Idempotent — a second run finds nothing. Crisis
+detection is deliberately **not** re-run: no crisis keyword has a US/Canadian
+spelling difference, so no match can move, and re-running it would risk
+re-flagging videos a participant has already dismissed.
+
+It rewrites stored transcripts in place, so take a backup first if the corpus
+matters — the substitutions are listed by `--dry-run` before anything is written.
+
 ### `resetData.ts` 🔴
 
 Wipe all participant data for a clean start.
@@ -222,6 +251,25 @@ Sanity-check the no-GPT bias recompute used by `updateVideo`.
 ```bash
 npx tsx src/scripts/local/checkBiasRecompute.ts
 ```
+
+### `local/checkCanadianSpelling.ts` 🟢
+
+Check the US → Canadian spelling map. Exits non-zero on a failure, so it can
+gate a change to the word list.
+
+```bash
+npx tsx src/scripts/local/checkCanadianSpelling.ts
+npx tsx src/scripts/local/checkCanadianSpelling.ts "my behavior at the center"
+```
+
+With no argument it runs a case table and audits the map for collisions. With
+text it rewrites just that text, for spot-checking a phrase before adding it.
+
+The cases that matter most are the ones expected **not** to change: Canadian
+English keeps American `-ize`/`-yze` and `anemia`/`pediatric`, Latin-derived
+`-or` derivatives stay short (`humorous`, `vigorous`), and whole-word matching
+has to leave `Colorado` and `Taylor` alone. **Run it after any edit to
+`canadianSpellingService`.**
 
 ---
 
