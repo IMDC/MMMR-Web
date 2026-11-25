@@ -43,6 +43,11 @@ export interface VideoSet {
   aiOptedIn: boolean;
   sentiment: string;
   bulletSentiments: string;
+  // Word Settings, persisted per set. hiddenWords is shared by the bar graph
+  // and the word cloud; the other two are per-chart.
+  hiddenWords: string[];
+  barGraphMinCount: number;
+  wordCloudPalette: string;
   createdAt: string;
   updatedAt: string;
 }

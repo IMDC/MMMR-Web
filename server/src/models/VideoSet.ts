@@ -12,6 +12,9 @@ export interface IVideoSet extends Document {
   aiOptedIn: boolean;
   sentiment: string;
   bulletSentiments: string;
+  hiddenWords: string[];
+  barGraphMinCount: number;
+  wordCloudPalette: string;
 }
 
 const VideoSetSchema = new Schema<IVideoSet>(
@@ -27,6 +30,15 @@ const VideoSetSchema = new Schema<IVideoSet>(
     aiOptedIn: { type: Boolean, default: false },
     sentiment: { type: String, default: '' },
     bulletSentiments: { type: String, default: '' },
+    // Word Settings, stored per set so a participant's curation survives
+    // leaving the page — these were component state and reset on every visit.
+    // Shared by the bar graph and the word cloud: the list means "words to
+    // leave out of this set's analysis", so removing one hides it in both.
+    hiddenWords: { type: [String], default: [] },
+    // Page-specific, because they describe how one chart is drawn rather than
+    // which words belong in the set.
+    barGraphMinCount: { type: Number, default: 2, min: 1 },
+    wordCloudPalette: { type: String, default: 'IBM' },
   },
   { timestamps: true }
 );

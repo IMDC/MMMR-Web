@@ -28,14 +28,13 @@ export default function WordCloudPage() {
   const { setId } = useParams<{ setId: string }>();
   const navigate = useNavigate();
   const { fetchFrequencyData, setSelectedWord } = useAnalysisStore();
-  const { videoSets, fetchSets } = useVideoSetStore();
+  const { videoSets, fetchSets, updateWordSettings, flushWordSettings } = useVideoSetStore();
 
   const [allWords, setAllWords] = useState<{ text: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [rendering, setRendering] = useState(false);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; word: string; count: number } | null>(null);
 
-  const [hiddenWords, setHiddenWords] = useState<Set<string>>(new Set());
   // Pending selection inside the settings modal. The cloud keeps rendering
   // from `hiddenWords` until Apply is pressed: committing on every tap meant a
   // full WordCloud() canvas re-layout per word, which crawls on phones.
@@ -43,7 +42,6 @@ export default function WordCloudPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [wordSearch, setWordSearch] = useState('');
 
-  const [selectedPalette, setSelectedPalette] = useState(PALETTES[0]);
   const [showPaletteDropdown, setShowPaletteDropdown] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,6 +50,19 @@ export default function WordCloudPage() {
 
   const videoSet = videoSets.find(s => s._id === setId);
   const setName = videoSet?.name ?? '';
+
+  // Word Settings live on the video set so they survive leaving the page. The
+  // hidden list is shared with the bar graph; the palette is this page's own.
+  // Keyed on contents rather than array identity, because a fetchSets refresh
+  // hands back an equal-but-new array and a fresh Set would re-lay out the
+  // whole canvas for nothing.
+  const hiddenKey = (videoSet?.hiddenWords ?? []).join('\u0000');
+  const hiddenWords = useMemo(
+    () => new Set(hiddenKey ? hiddenKey.split('\u0000') : []),
+    [hiddenKey],
+  );
+  const selectedPalette =
+    PALETTES.find(p => p.value === videoSet?.wordCloudPalette) ?? PALETTES[0];
 
   // Track wrapper width → derive canvas dimensions
   useEffect(() => {
@@ -191,10 +202,14 @@ export default function WordCloudPage() {
   };
 
   const applySettings = () => {
-    // Swap state only when the selection actually changed — handing useMemo a
-    // fresh Set with identical contents would re-layout the canvas for nothing.
-    if (!sameSet(draftHidden, hiddenWords)) setHiddenWords(new Set(draftHidden));
+    // Persist only when the selection actually changed — an equal-but-new
+    // stored array would re-layout the canvas for nothing.
+    if (setId && !sameSet(draftHidden, hiddenWords)) {
+      // Sorted so the stored order is canonical and the key above stays stable.
+      updateWordSettings(setId, { hiddenWords: [...draftHidden].sort() });
+    }
     setShowSettings(false);
+    if (setId) void flushWordSettings(setId);
   };
 
   const draftDirty = !sameSet(draftHidden, hiddenWords);
@@ -242,7 +257,10 @@ export default function WordCloudPage() {
                   {PALETTES.map(p => (
                     <button
                       key={p.value}
-                      onClick={() => { setSelectedPalette(p); setShowPaletteDropdown(false); }}
+                      onClick={() => {
+                        if (setId) updateWordSettings(setId, { wordCloudPalette: p.value });
+                        setShowPaletteDropdown(false);
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${selectedPalette.value === p.value ? 'bg-gray-50' : ''}`}
                     >
                       <span className="flex gap-1">

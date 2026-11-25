@@ -35,26 +35,48 @@ export default function BarGraphPage() {
   const { setId } = useParams<{ setId: string }>();
   const navigate = useNavigate();
   const { fetchFrequencyData, setSelectedWord } = useAnalysisStore();
-  const { videoSets, fetchSets } = useVideoSetStore();
+  const { videoSets, fetchSets, updateWordSettings, flushWordSettings } = useVideoSetStore();
   const { videos, fetchVideos } = useVideoStore();
 
   const [data, setData] = useState<{ text: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [minCount, setMinCount] = useState(DEFAULT_MIN_COUNT);
   const [minCountInput, setMinCountInput] = useState(String(DEFAULT_MIN_COUNT));
-  // hiddenWords: words removed from the chart (checked in modal = hidden)
-  const [hiddenWords, setHiddenWords] = useState<Set<string>>(new Set());
   const [showWordSettings, setShowWordSettings] = useState(false);
   const [wordSearch, setWordSearch] = useState('');
+  // Whether the set list has come back. Without it a set that cannot be found
+  // would hold the chart on its loader forever, since minCount stays unknown.
+  const [setsFetched, setSetsFetched] = useState(false);
   const videoSet = videoSets.find(s => s._id === setId);
 
+  // Word Settings live on the video set so they survive leaving the page.
+  // null means "not known yet": the fetch below waits for the stored value
+  // rather than firing once with the default and again with the real one.
+  const minCount = videoSet
+    ? videoSet.barGraphMinCount ?? DEFAULT_MIN_COUNT
+    : setsFetched ? DEFAULT_MIN_COUNT : null;
+
+  // hiddenWords: words removed from the chart (checked in modal = hidden).
+  // Keyed on contents rather than array identity — a fetchSets refresh hands
+  // back an equal-but-new array, which would otherwise re-filter for nothing.
+  const hiddenKey = (videoSet?.hiddenWords ?? []).join('\u0000');
+  const hiddenWords = useMemo(
+    () => new Set(hiddenKey ? hiddenKey.split('\u0000') : []),
+    [hiddenKey],
+  );
+
   useEffect(() => {
-    fetchSets();
+    fetchSets().catch(() => {}).finally(() => setSetsFetched(true));
     fetchVideos();
   }, []);
 
+  // Seed the input from the stored value, keyed on the set id alone so an
+  // optimistic store update cannot overwrite a number being typed.
   useEffect(() => {
-    if (!setId) return;
+    if (videoSet) setMinCountInput(String(videoSet.barGraphMinCount ?? DEFAULT_MIN_COUNT));
+  }, [videoSet?._id]);
+
+  useEffect(() => {
+    if (!setId || minCount === null) return;
     setLoading(true);
     fetchFrequencyData(setId, minCount)
       .then(result => { setData(result.barData.data || []); })
@@ -84,11 +106,18 @@ export default function BarGraphPage() {
     .filter(d => d.count > 0);
 
   const toggleHidden = (word: string) => {
-    setHiddenWords(prev => {
-      const next = new Set(prev);
-      next.has(word) ? next.delete(word) : next.add(word);
-      return next;
-    });
+    if (!setId) return;
+    const next = new Set(hiddenWords);
+    next.has(word) ? next.delete(word) : next.add(word);
+    // Sorted so the stored order is canonical and the key above stays stable.
+    updateWordSettings(setId, { hiddenWords: [...next].sort() });
+  };
+
+  // Writes are coalesced while the modal is open; closing it flushes the
+  // pending one so a selection is not lost if the tab goes away.
+  const closeWordSettings = () => {
+    setShowWordSettings(false);
+    if (setId) void flushWordSettings(setId);
   };
 
   const handleBarClick = (item: any) => {
@@ -99,7 +128,7 @@ export default function BarGraphPage() {
   const handleMinCountChange = (val: string) => {
     setMinCountInput(val);
     const n = parseInt(val, 10);
-    if (!isNaN(n) && n >= 1) setMinCount(n);
+    if (!isNaN(n) && n >= 1 && setId) updateWordSettings(setId, { barGraphMinCount: n });
   };
 
   const setName = videoSet?.name ?? '';
@@ -231,8 +260,8 @@ export default function BarGraphPage() {
       {showWordSettings && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setShowWordSettings(false)}
-          onKeyDown={e => e.key === 'Escape' && setShowWordSettings(false)}
+          onClick={closeWordSettings}
+          onKeyDown={e => e.key === 'Escape' && closeWordSettings()}
           role="presentation"
         >
           <div
@@ -246,7 +275,7 @@ export default function BarGraphPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
               <h2 id="word-settings-title" className="font-bold text-gray-800">Word Settings</h2>
               <button
-                onClick={() => setShowWordSettings(false)}
+                onClick={closeWordSettings}
                 className="text-gray-400 hover:text-gray-600"
                 aria-label="Close word settings"
               >
@@ -283,7 +312,7 @@ export default function BarGraphPage() {
                 </p>
                 {hiddenWords.size > 0 && (
                   <button
-                    onClick={() => setHiddenWords(new Set())}
+                    onClick={() => setId && updateWordSettings(setId, { hiddenWords: [] })}
                     className="text-xs text-mhmr-olive hover:underline font-medium"
                   >
                     Show all ({hiddenWords.size} hidden)
@@ -345,7 +374,7 @@ export default function BarGraphPage() {
             {/* Done button */}
             <div className="px-5 py-4 border-t border-gray-100 shrink-0">
               <button
-                onClick={() => setShowWordSettings(false)}
+                onClick={closeWordSettings}
                 className="btn-primary w-full"
               >
                 Done

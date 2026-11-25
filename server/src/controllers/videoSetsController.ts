@@ -30,6 +30,8 @@ export async function updateVideoSet(req: Request, res: Response) {
   const allowed = [
     'name', 'reportFormat', 'aiOptedIn',
     'summaryAnalysisBullet', 'summaryAnalysisSentence', 'isSummaryGenerated',
+    // Word Settings for the bar graph and word cloud.
+    'hiddenWords', 'barGraphMinCount', 'wordCloudPalette',
   ];
   const updates: Record<string, any> = {};
   for (const key of allowed) {

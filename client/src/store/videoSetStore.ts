@@ -15,6 +15,40 @@ interface VideoSetStore {
   removeVideoFromSet: (setId: string, videoId: string) => Promise<void>;
   setCurrentSetId: (id: string | null) => void;
   refreshSet: (id: string) => Promise<void>;
+  updateWordSettings: (id: string, patch: WordSettingsPatch) => void;
+  flushWordSettings: (id: string) => Promise<void>;
+}
+
+/** The per-set Word Settings the charts own. */
+export type WordSettingsPatch = Partial<
+  Pick<VideoSet, 'hiddenWords' | 'barGraphMinCount' | 'wordCloudPalette'>
+>;
+
+// Word Settings are tapped in bursts — one checkbox per word — so the write is
+// coalesced rather than fired per tap. The local store updates immediately so
+// the chart reacts without waiting on the network; the pending patch is keyed
+// by set id and lives outside the store so navigating away does not cancel it.
+const PERSIST_DELAY_MS = 600;
+const pendingPatch: Record<string, WordSettingsPatch> = {};
+const persistTimer: Record<string, ReturnType<typeof setTimeout>> = {};
+
+async function persistNow(id: string) {
+  const body = pendingPatch[id];
+  delete pendingPatch[id];
+  if (persistTimer[id]) {
+    clearTimeout(persistTimer[id]);
+    delete persistTimer[id];
+  }
+  if (!body) return;
+  try {
+    // The response is deliberately not written back into the store: a reply
+    // that lost a race with a newer tap would undo it on screen.
+    await videoSetsApi.update(id, body);
+  } catch (error) {
+    // Keep the optimistic value rather than yanking the chart out from under
+    // the user; the next fetchSets resyncs from the server.
+    console.error('Could not save word settings', error);
+  }
 }
 
 export const useVideoSetStore = create<VideoSetStore>((set, get) => ({
@@ -69,6 +103,19 @@ export const useVideoSetStore = create<VideoSetStore>((set, get) => ({
   },
 
   setCurrentSetId: (id) => set({ currentSetId: id }),
+
+  updateWordSettings: (id, patch) => {
+    set(state => ({
+      videoSets: state.videoSets.map(s => s._id === id ? { ...s, ...patch } : s),
+    }));
+    pendingPatch[id] = { ...pendingPatch[id], ...patch };
+    if (persistTimer[id]) clearTimeout(persistTimer[id]);
+    persistTimer[id] = setTimeout(() => { void persistNow(id); }, PERSIST_DELAY_MS);
+  },
+
+  // Called when a settings modal closes, so a selection is not left sitting in
+  // the debounce window if the tab goes away.
+  flushWordSettings: (id) => persistNow(id),
 
   refreshSet: async (id) => {
     const updated = await videoSetsApi.get(id);
